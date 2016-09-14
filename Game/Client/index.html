@@ -3,15 +3,14 @@
 <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
 <script>
     var socket = io();
-    socket.on('serverMsg', function (data) {
+    socket.on('MessageFromServer', function (data) {
         console.log(data.msg);
     });
 
     //send message to server when clicking a button
-    var message = function () {
+    var messageSender = function () {
         socket.emit('MessageToServer', {
-            reason: 'Hello from the client click'
         });
     };
 </script>
-<button onclick="message()">Click Me!</button>
+<button onclick="messageSender()">Click Me!</button>
