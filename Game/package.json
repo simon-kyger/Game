@@ -1,0 +1,9 @@
+{
+  "name": "game",
+  "version": "0.0.0",
+  "description": "Game",
+  "main": "server.js",
+  "author": {
+    "name": "simon"
+  }
+}
