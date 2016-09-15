@@ -17,8 +17,8 @@ server.listen(port);
 var PLAYER_LIST = {};
 var Player = function (id) {
     var self = {
-        x: 250,
-        y: 250,
+        x: 0,
+        y: 0,
         id: id,
         number: Math.floor(10 * Math.Random),
         dirUp: false,
