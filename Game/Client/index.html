@@ -16,53 +16,55 @@
         </div>
         <!--CHAT-->
         <script>
-            var $chat = $('.chat'),
-            $printer = $('.messages', $chat),
-            $textArea = $('.chatinput', $chat),
-            $postBtn = $('button', $chat),
-            printerH = $printer.innerHeight(),
-            preventNewScroll = false;
+            (function () {
+                var chat = $('.chat'),
+                printer = $('.messages', chat),
+                chatinput = $('.chatinput', chat),
+                //postBtn = $('button', chat),
+                printerH = printer.innerHeight(),
+                preventNewScroll = false;
 
-            $textArea.focus();
+                chatinput.focus();
 
-            //// SCROLL BOTTOM	
-            function scrollBottom() {
-                if (!preventNewScroll) { // if mouse is not over printer
-                    $printer.stop().animate({ scrollTop: $printer[0].scrollHeight - printerH }, 600); // SET SCROLLER TO BOTTOM
-                }
-            }
-            scrollBottom(); // DO IMMEDIATELY
-
-            function postMessage(e) {
-                // on Post click or 'enter' but allow new lines using shift+enter
-                if (e.type == 'click' || (e.which == 13 && !e.shiftKey)) {
-                    e.preventDefault();
-                    var msg = $textArea.val(); // not empty / space
-                    if ($.trim(msg)) {
-                        $printer.append('<div>' + msg.replace(/\n/g, '<br>') + '</div>');
-                        $textArea[0].value = ''; // CLEAR TEXTAREA
-                        scrollBottom(); // DO ON POST
-                        // HERE Use AJAX to post msg to PHP      
+                //// SCROLL BOTTOM	
+                function scrollBottom() {
+                    if (!preventNewScroll) { // if mouse is not over printer
+                        printer.stop().animate({ scrollTop: printer[0].scrollHeight - printerH }, 600); // SET SCROLLER TO BOTTOM
                     }
                 }
-            }
+                scrollBottom(); // DO IMMEDIATELY
+
+                function postMessage(e) {
+                    // on Post click or 'enter' but allow new lines using shift+enter
+                    if (e.type == 'click' || (e.which == 13 && !e.shiftKey)) {
+                        e.preventDefault();
+                        var msg = chatinput.val(); // not empty / space
+                        if ($.trim(msg)) {
+                            printer.append('<div>' + msg.replace(/\n/g, '<br>') + '</div>');
+                            chatinput[0].value = ''; // CLEAR TEXTAREA
+                            scrollBottom(); // DO ON POST
+                            // HERE Use AJAX to post msg to PHP      
+                        }
+                    }
+                }
 
 
-            //// PREVENT SCROLL TO BOTTOM WHILE READING OLD MESSAGES
-            $printer.hover(function (e) {
-                preventNewScroll = e.type == 'mouseenter' ? true : false;
-                if (!preventNewScroll) { scrollBottom(); } // On mouseleave go to bottom
-            });
+                //// PREVENT SCROLL TO BOTTOM WHILE READING OLD MESSAGES
+                printer.hover(function (e) {
+                    preventNewScroll = e.type == 'mouseenter' ? true : false;
+                    if (!preventNewScroll) { scrollBottom(); } // On mouseleave go to bottom
+                });
 
-            $postBtn.click(postMessage);
-            $textArea.keyup(postMessage);
-            $printer.append("<div>Welcome to Simon's Game Server</div>");
-            //// TEST ONLY - SIMULATE NEW MESSAGES
-            //var i = 0;
-            //intv = setInterval(function () {
-                //$printer.append("<div>Message ... " + (++i) + "</div>");
+                //postBtn.click(postMessage);
+                chatinput.keyup(postMessage);
+                printer.append("<div>Welcome to Simon's Game Server</div>");
+                //// TEST ONLY - SIMULATE NEW MESSAGES
+                //var i = 0;
+                //intv = setInterval(function () {
+                //printer.append("<div>Message ... " + (++i) + "</div>");
                 //scrollBottom(); // DO ON NEW MESSAGE (AJAX)
-            //}, 2000);
+                //}, 2000);
+            })();
 
         </script>
         <!--GAME-->
