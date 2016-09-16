@@ -14,12 +14,77 @@
             ctx.height = window.innerHeight;
             var sprite = {};
             sprite.player = new Image();
-            sprite.player.src = '/client/sprites/forest1.png';
+            sprite.player.src = '/client/sprites/warrior.png';
+            sprite.grass1 = new Image();
+            sprite.grass1.src = '/client/sprites/grass1.png';
+            sprite.grass2 = new Image();
+            sprite.grass2.src = '/client/sprites/grass2.png';
+            sprite.rock1 = new Image();
+            sprite.rock1.src = '/client/sprites/rock1.png';
+            sprite.shrub1 = new Image();
+            sprite.shrub1.src = '/client/sprites/shrub1.png';
+            sprite.shrub2 = new Image();
+            sprite.shrub2.src = '/client/sprites/shrub2.png';
+            sprite.stump = new Image();
+            sprite.stump.src = '/client/sprites/stump.png';
+            sprite.tree1 = new Image();
+            sprite.tree1.src = '/client/sprites/tree1.png';
+            sprite.tree2 = new Image();
+            sprite.tree2.src = '/client/sprites/tree2.png';
+            sprite.tree3 = new Image();
+            sprite.tree3.src = '/client/sprites/tree3.png';
+
             socket.on('positionalData', function (data) {
                 ctx.clearRect(0, 0, ctx.width, ctx.height);
-                for (var i = 0; i < data.length; i++)
-                    ctx.drawImage(sprite.player, data[i].x, data[i].y);
+                for (var i = 0; i < data.length; i++) {
+                    //map
+                    for (var j = 0; j < data[i].map.length; j++) {
+                        for (var k = 0; k < data[i].map[j].length; k++) {
+                            if (data[i].map[j][k] == 0)
+                                ctx.drawImage(sprite.grass1, k * 16, j * 16);
+                            if (data[i].map[j][k] == 1)
+                                ctx.drawImage(sprite.grass2, k * 16, j * 16);
+                        }
+                    }
+                    //map overlays
+                    for (var j = 0; j < data[i].mapoverlay.length; j++) {
+                        for (var k = 0; k < data[i].mapoverlay[j].length; k++) {
+                            if (data[i].mapoverlay[j][k] == 1)
+                                ctx.drawImage(sprite.shrub1, k * 16, j * 16);
+                            if (data[i].mapoverlay[j][k] == 2)
+                                ctx.drawImage(sprite.shrub2, k * 16, j * 16);
+                            if (data[i].mapoverlay[j][k] == 3)
+                                ctx.drawImage(sprite.rock1, k * 16, j * 16);
+                            if (data[i].mapoverlay[j][k] == 4)
+                                ctx.drawImage(sprite.stump, k * 16, j * 16);
+                            if (data[i].mapoverlay[j][k] == 5)
+                                ctx.drawImage(sprite.tree1, k * 16, j * 16);
+                            if (data[i].mapoverlay[j][k] == 6)
+                                ctx.drawImage(sprite.tree2, k * 16, j * 16);
+                            if (data[i].mapoverlay[j][k] == 7)
+                                ctx.drawImage(sprite.tree3, k * 16, j * 16);
+                        }
+                    }
+                    //player
+                    if (data[i].spd == 0) {
+                        if (data[i].dir == 'right')
+                            ctx.drawImage(sprite.player, 0, 0, 16, 16, data[i].x, data[i].y, 16, 16);
+                        else if (data[i].dir == 'left')
+                            ctx.drawImage(sprite.player, 64, 0, 16, 16, data[i].x, data[i].y, 16, 16);
+                    } else {
+                        var pixels = 0;
+                        if (data[i].dir == 'right'){
+                            pixels = data[i].frame * 16;
+                            ctx.drawImage(sprite.player, pixels, 0, 16, 16, data[i].x, data[i].y, 16, 16);
+                        }
+                        if (data[i].dir == 'left') {
+                            pixels = (data[i].frame * 16) + 64;
+                            ctx.drawImage(sprite.player, pixels, 0, 16, 16, data[i].x, data[i].y, 16, 16);
+                        }
+                    }
+                }
             });
+
 
             //keydowns
             document.onkeydown = function (event) {
@@ -50,22 +115,26 @@
                 if (event.keyCode === 87)
                     socket.emit('keypress', {
                         inputId: 'up',
-                        state: false
+                        state: false,
+                        spd: 0
                     });
-                else if (event.keyCode === 83)
+                if (event.keyCode === 83)
                     socket.emit('keypress', {
                         inputId: 'down',
-                        state: false
+                        state: false,
+                        spd: 0
                     });
-                else if (event.keyCode === 65)
+                if (event.keyCode === 65)
                     socket.emit('keypress', {
                         inputId: 'left',
-                        state: false
+                        state: false,
+                        spd: 0
                     });
-                else if (event.keyCode === 68)
+                if (event.keyCode === 68)
                     socket.emit('keypress', {
                         inputId: 'right',
-                        state: false
+                        state: false,
+                        spd: 0
                     });
             }
         </script>
