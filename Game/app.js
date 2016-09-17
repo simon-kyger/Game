@@ -13,8 +13,7 @@ app.use('/client', express.static(__dirname + '/client'));
 //on
 server.listen(port);
 
-//abstracts
-var PLAYER_LIST = {};
+//player Class
 var Player = function (id) {
     var self = {
         x: 128,
@@ -39,22 +38,12 @@ var Player = function (id) {
             if (self.dirRight)
                 self.x += self.spd;
     }
+    Player.List[id] = self;
     return self;
 }
-
-//upon connection
-var SOCKET_CONNECTIONS = {};
-var UNIQUEID = 0;
-io.sockets.on('connection', function (socket) {
-    socket.id = UNIQUEID;
-    UNIQUEID++;
-    SOCKET_CONNECTIONS[socket.id] = socket;
+Player.List = {};
+Player.onConnect = function (socket) {
     var player = Player(socket.id);
-    PLAYER_LIST[socket.id] = player;
-
-    //send a message to node console on server
-    console.log('Someone has connected');
-    
     socket.on('keypress', function (data) {
         if (data.inputId === 'up') {
             player.dirUp = data.state;
@@ -87,11 +76,52 @@ io.sockets.on('connection', function (socket) {
                 player.spd = 0;
         }
     });
+}
+Player.onDisconnect = function (socket) {
+    delete Player.list[socket.id];
+}
+Player.update = function () {
+    var data = [];
+    for (var i in Player.List) {
+        var player = Player.List[i];
+        player.updatePosition();
+        if (player.frame > 3)
+            player.frame = 0;
+        data.push({
+            id: player.id,
+            x: player.x,
+            y: player.y,
+            dir: player.dir,
+            spd: player.spd,
+            frame: player.frame,
+            map: map,
+            mapoverlay: mapoverlay
+        });
+        player.frame++;
+    }
+    return data;
+}
 
+//upon connection
+var SOCKET_CONNECTIONS = {};
+var UNIQUEID = 0;
+io.sockets.on('connection', function (socket) {
+    socket.id = UNIQUEID;
+    UNIQUEID++;
+    SOCKET_CONNECTIONS[socket.id] = socket;
+    Player.onConnect(socket);
+    //send a message to node console on server
+    console.log('Someone has connected');
     socket.on('disconnect', function () {
         delete SOCKET_CONNECTIONS[socket.id];
         console.log('Someone disconnected');
-        delete PLAYER_LIST[socket.id];
+        delete Player.List[socket.id];
+    });
+    socket.on('chatMsg', function (message) {
+        var playerid = ("" + socket.id);
+        for (var i in SOCKET_CONNECTIONS) {
+            SOCKET_CONNECTIONS[i].emit('addToChat', playerid + ': ' + message);
+        }
     });
 });
 
@@ -105,7 +135,7 @@ var map = [
     //[0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0],
     //[0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
     //[0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0],
-    //[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1]
+    //[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
 ];
 
 var mapoverlay = [
@@ -122,26 +152,9 @@ var mapoverlay = [
 ];
 
 setInterval(function () {
-    var data = [];
-    for (var i in PLAYER_LIST) {
-        var player = PLAYER_LIST[i];
-        player.updatePosition();
-        if (player.frame > 3)
-            player.frame = 0;
-        data.push({
-            id: player.id,
-            x: player.x,
-            y: player.y,
-            dir: player.dir,
-            spd: player.spd,
-            frame: player.frame,
-            map: map,
-            mapoverlay: mapoverlay
-        });
-        player.frame++;
-    }
+    var pack = Player.update();
     for (var i in SOCKET_CONNECTIONS) {
         var socket = SOCKET_CONNECTIONS[i];
-        socket.emit('positionalData', data);
+        socket.emit('positionalData', pack);
     }
-}, 1000/20);
+}, 50); //20fps

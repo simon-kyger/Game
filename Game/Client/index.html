@@ -7,69 +7,55 @@
     </head>
     <body>
         <div id="game">
+            <!--GAMEBOARD-->
             <canvas id="ctx"></canvas>
-            <div class="chat">
+            <!--CHATUI-->
+            <div id="chat" class="chat">
                 <div class="messages">
+                    <div>Welcome to Simon's Game Server</div>
                 </div>
                 <input class="chatinput"></input>
             </div>
+            <!--ADDITIONALUI-->
         </div>
-        <!--CHAT-->
-        <script>
-            (function () {
-                var chat = $('.chat'),
-                printer = $('.messages', chat),
-                chatinput = $('.chatinput', chat),
-                //postBtn = $('button', chat),
-                printerH = printer.innerHeight(),
-                preventNewScroll = false;
-
-                chatinput.focus();
-
-                //// SCROLL BOTTOM	
-                function scrollBottom() {
-                    if (!preventNewScroll) { // if mouse is not over printer
-                        printer.stop().animate({ scrollTop: printer[0].scrollHeight - printerH }, 600); // SET SCROLLER TO BOTTOM
-                    }
-                }
-                scrollBottom(); // DO IMMEDIATELY
-
-                function postMessage(e) {
-                    // on Post click or 'enter' but allow new lines using shift+enter
-                    if (e.type == 'click' || (e.which == 13 && !e.shiftKey)) {
-                        e.preventDefault();
-                        var msg = chatinput.val(); // not empty / space
-                        if ($.trim(msg)) {
-                            printer.append('<div>' + msg.replace(/\n/g, '<br>') + '</div>');
-                            chatinput[0].value = ''; // CLEAR TEXTAREA
-                            scrollBottom(); // DO ON POST
-                            // HERE Use AJAX to post msg to PHP      
-                        }
-                    }
-                }
-
-
-                //// PREVENT SCROLL TO BOTTOM WHILE READING OLD MESSAGES
-                printer.hover(function (e) {
-                    preventNewScroll = e.type == 'mouseenter' ? true : false;
-                    if (!preventNewScroll) { scrollBottom(); } // On mouseleave go to bottom
-                });
-
-                //postBtn.click(postMessage);
-                chatinput.keyup(postMessage);
-                printer.append("<div>Welcome to Simon's Game Server</div>");
-                //// TEST ONLY - SIMULATE NEW MESSAGES
-                //var i = 0;
-                //intv = setInterval(function () {
-                //printer.append("<div>Message ... " + (++i) + "</div>");
-                //scrollBottom(); // DO ON NEW MESSAGE (AJAX)
-                //}, 2000);
-            })();
-
-        </script>
-        <!--GAME-->
         <script>
             var socket = io();
+            var chat = $('.chat');
+            var printer = $('.messages', chat);
+            var chatinput = $('.chatinput', chat);
+            var printerH = printer.innerHeight();
+            var preventNewScroll = false;
+            function scrollBottom() {
+                if (!preventNewScroll) { // if mouse is not over printer
+                    printer.stop().animate({ scrollTop: printer[0].scrollHeight - printerH }, 600); // SET SCROLLER TO BOTTOM
+                }
+            }
+            scrollBottom();
+            chatinput.keyup(postMessage);
+            function postMessage(e) {
+                // after hitting enter but allowing new lines using shift+enter
+                if (e.which == 13 && !e.shiftKey) {
+                    e.preventDefault();
+                    var msg = chatinput.val(); 
+                    // not empty / space
+                    if ($.trim(msg)) {
+                        socket.emit('chatMsg', msg);
+                    }
+                }
+            }
+            // prevent scrolling when reading past messages
+            printer.hover(function (e) {
+                preventNewScroll = e.type == 'mouseenter' ? true : false;
+                if (!preventNewScroll) { scrollBottom(); } // On mouseleave go to bottom
+            });
+
+            socket.on('addToChat', function (data) {
+                printer.append('<div>' + data.replace(/\n/g, '<br>') + '</div>');
+                chatinput[0].value = ''; // CLEAR TEXTAREA
+                scrollBottom();
+            });
+
+            //GAME
             var ctx = document.getElementById("ctx").getContext("2d");
             ctx.width = window.innerWidth;
             ctx.height = window.innerHeight;
@@ -94,8 +80,9 @@
             sprite.tree2.src = '/client/sprites/tree2.png';
             sprite.tree3 = new Image();
             sprite.tree3.src = '/client/sprites/tree3.png';
-
+            var datavar = null;
             socket.on('positionalData', function (data) {
+                datavar = data;
                 ctx.clearRect(0, 0, ctx.width, ctx.height);
                 for (var i = 0; i < data.length; i++) {
                     //map
@@ -145,9 +132,6 @@
                     }
                 }
             });
-
-
-            //keydowns
             document.onkeydown = function (event) {
                 if (event.keyCode === 87)
                     socket.emit('keypress', {
@@ -198,6 +182,18 @@
                         spd: 0
                     });
             }
+
+            var chatting = false;
+
+            //game loop
+
+            setInterval(function () {
+                var chat = $("#chat");
+                if (chat.is(":hover"))
+                    chatting = true;
+                else
+                    chatting = false;
+            }, 25); //40fps
         </script>
     </body>
 </html>
