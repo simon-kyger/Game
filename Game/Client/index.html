@@ -94,6 +94,8 @@
                                 ctx.drawImage(sprite.grass2, k * 16, j * 16);
                         }
                     }
+                }
+                for (var i = 0; i < data.length; i++) {
                     //map overlays
                     for (var j = 0; j < data[i].mapoverlay.length; j++) {
                         for (var k = 0; k < data[i].mapoverlay[j].length; k++) {
@@ -113,6 +115,8 @@
                                 ctx.drawImage(sprite.tree3, k * 16, j * 16);
                         }
                     }
+                }
+                for (var i = 0; i < data.length; i++) {
                     //player
                     if (data[i].spd == 0) {
                         if (data[i].dir == 'right')
