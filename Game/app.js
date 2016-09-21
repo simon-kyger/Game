@@ -155,7 +155,7 @@ io.sockets.on('connection', function (socket) {
         for (var i in SOCKET_CONNECTIONS)
             SOCKET_CONNECTIONS[i].emit('addToChat', socket.id + ' has disconnected');
         console.log('Player: ' + socket.id + ' has disconnected');
-        Player.onDisconnect(socket.id);
+        Player.onDisconnect(socket);
         delete SOCKET_CONNECTIONS[socket.id];
     });
     socket.on('chatMsg', function (message) {
@@ -211,4 +211,4 @@ setInterval(function () {
     }
     initPack.player = [];
     removePack.player = [];
-}, 100); //10 times per second
+}, 33); //30 times per second
