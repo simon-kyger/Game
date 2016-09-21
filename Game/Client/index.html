@@ -90,7 +90,6 @@
                     dirLeft: init.dirLeft,
                     dirRight: init.dirRight,
                     dir: init.dir,
-                    spd: init.spd,
                     spdx: init.spdx,
                     spdy: init.spdy,
                     frame: init.frame,
@@ -100,20 +99,25 @@
                 }
                 self.draw = function () {
                     if (self.spdy == 0 && self.spdx == 0) {
-                        if (self.dir == 'right')
+                        if (self.dir == 'right'){
                             ctx.drawImage(sprite.player, 0, 0, 16, 16, self.x, self.y, 16, 16);
-                        else if (self.dir == 'left')
+                        }
+                        if (self.dir == 'left'){
                             ctx.drawImage(sprite.player, 64, 0, 16, 16, self.x, self.y, 16, 16);
-                    } else {
-                        var pixels = 0;
+                        }
+                    }
+                    else {
+                        var offset = Math.floor(self.frame) % 4;
                         if (self.dir == 'right') {
-                            pixels = Player.list[i].frame * 16;
-                            ctx.drawImage(sprite.player, pixels, 0, 16, 16, self.x, self.y, 16, 16);
+                            offset = offset * 16;
+                            ctx.drawImage(sprite.player, offset, 0, 16, 16, self.x, self.y, 16, 16);
                         }
                         if (self.dir == 'left') {
-                            pixels = (Player.list[i].frame * 16) + 64;
-                            ctx.drawImage(sprite.player, pixels, 0, 16, 16, self.x, self.y, 16, 16);
+                            offset = offset * 16 + 64;
+                            ctx.drawImage(sprite.player, offset, 0, 16, 16, self.x, self.y, 16, 16);
                         }
+
+                        self.frame+= .1;
                     }
                 }
                 Player.list[self.id] = self;
@@ -124,6 +128,7 @@
                 for (var i = 0; i < data.player.length; i++)
                     new Player(data.player[i]);
             });
+
             socket.on('update', function (data) {
                 for (var i = 0; i < data.player.length; i++) {
                     var pack = data.player[i];
@@ -134,7 +139,11 @@
                         if (p.y !== undefined)
                             p.y = pack.y;
                         if (p.dir !== undefined)
-                            p.dir == pack.dir;
+                            p.dir = pack.dir;
+                        if (p.spdy !== undefined)
+                            p.spdy = pack.spdy;
+                        if (p.spdx !== undefined)
+                            p.spdx = pack.spdx;
                     }
                 }
             });
@@ -245,8 +254,8 @@
             //rendering
             function render() {
                 ctx.clearRect(0, 0, ctx.width, ctx.height);
-                drawMap();
-                drawMapOverlay();
+                //drawMap();
+                //drawMapOverlay();
                 drawPlayers();
             }
             //game loop
@@ -257,8 +266,9 @@
                     chatting = true;
                 else
                     chatting = false;
+                
                 render();
-            }, 25); //40fps
+            }, 20); //40fps
           
 
         </script>

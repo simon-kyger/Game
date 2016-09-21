@@ -33,11 +33,9 @@ var Player = function (id) {
     self.updatePosition = function() {
         if (self.dirUp) {
             self.y -= self.spdy;
-            self.dir = 'up';
         }
         if (self.dirDown) {
             self.y += self.spdy;
-            self.dir = 'down';
         }
         if (self.dirLeft) {
             self.x -= self.spdx;
@@ -60,7 +58,6 @@ var Player = function (id) {
             dirLeft: self.dirLeft,
             dirRight: self.dirRight,
             dir: self.dir,
-            spd: self.spd,
             spdx: self.spdx,
             spdy: self.spdy,
             frame: self.frame,
@@ -73,7 +70,9 @@ var Player = function (id) {
             id: self.id,
             x: self.x,
             y: self.y,
-            dir: self.dir
+            dir: self.dir,
+            spdx: self.spdx,
+            spdy: self.spdy
         };
     }
 
@@ -88,30 +87,30 @@ Player.onConnect = function (socket) {
         if (data.inputId === 'up') {
             player.dirUp = data.state;
             if (data.state)
-                player.spdy = 5;
+                player.spdy = 2;
             else
                 player.spdy = 0;
-        } else
+        }
         if (data.inputId === 'down') {
             player.dirDown = data.state;
             if (data.state)
-                player.spdy = 5;
+                player.spdy = 2;
             else
                 player.spdy = 0;
-        } else
+        }
         if (data.inputId === 'left') {
             player.dirLeft = data.state;
             player.dir = data.inputId;
             if (data.state)
-                player.spdx = 5;
+                player.spdx = 2;
             else
                 player.spdx = 0;
-        } else
+        }
         if (data.inputId === 'right') {
             player.dirRight = data.state;
             player.dir = data.inputId;
             if (data.state)
-                player.spdx = 5;
+                player.spdx = 2;
             else
                 player.spdx = 0;
         }
@@ -211,4 +210,4 @@ setInterval(function () {
     }
     initPack.player = [];
     removePack.player = [];
-}, 33); //30 times per second
+}, 50); //20 times per second
