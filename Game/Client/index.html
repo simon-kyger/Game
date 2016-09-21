@@ -80,124 +80,187 @@
             sprite.tree2.src = '/client/sprites/tree2.png';
             sprite.tree3 = new Image();
             sprite.tree3.src = '/client/sprites/tree3.png';
-            var datavar = null;
-            socket.on('positionalData', function (data) {
-                datavar = data;
-                ctx.clearRect(0, 0, ctx.width, ctx.height);
-                for (var i = 0; i < data.length; i++) {
-                    //map
-                    for (var j = 0; j < data[i].map.length; j++) {
-                        for (var k = 0; k < data[i].map[j].length; k++) {
-                            if (data[i].map[j][k] == 0)
-                                ctx.drawImage(sprite.grass1, k * 16, j * 16);
-                            if (data[i].map[j][k] == 1)
-                                ctx.drawImage(sprite.grass2, k * 16, j * 16);
-                        }
-                    }
+            var Player = function (init) {
+                var self = {
+                    id: init.id,
+                    x: init.x,
+                    y: init.y,
+                    dirUp: init.dirUp,
+                    dirDown: init.dirDown,
+                    dirLeft: init.dirLeft,
+                    dirRight: init.dirRight,
+                    dir: init.dir,
+                    spd: init.spd,
+                    spdx: init.spdx,
+                    spdy: init.spdy,
+                    frame: init.frame,
+                    map: init.map,
+                    mapOverlay: init.mapOverlay,
+                    frame: init.frame
                 }
-                for (var i = 0; i < data.length; i++) {
-                    //map overlays
-                    for (var j = 0; j < data[i].mapoverlay.length; j++) {
-                        for (var k = 0; k < data[i].mapoverlay[j].length; k++) {
-                            if (data[i].mapoverlay[j][k] == 1)
-                                ctx.drawImage(sprite.shrub1, k * 16, j * 16);
-                            if (data[i].mapoverlay[j][k] == 2)
-                                ctx.drawImage(sprite.shrub2, k * 16, j * 16);
-                            if (data[i].mapoverlay[j][k] == 3)
-                                ctx.drawImage(sprite.rock1, k * 16, j * 16);
-                            if (data[i].mapoverlay[j][k] == 4)
-                                ctx.drawImage(sprite.stump, k * 16, j * 16);
-                            if (data[i].mapoverlay[j][k] == 5)
-                                ctx.drawImage(sprite.tree1, k * 16, j * 16);
-                            if (data[i].mapoverlay[j][k] == 6)
-                                ctx.drawImage(sprite.tree2, k * 16, j * 16);
-                            if (data[i].mapoverlay[j][k] == 7)
-                                ctx.drawImage(sprite.tree3, k * 16, j * 16);
-                        }
-                    }
-                }
-                for (var i = 0; i < data.length; i++) {
-                    //player
-                    if (data[i].spd == 0) {
-                        if (data[i].dir == 'right')
-                            ctx.drawImage(sprite.player, 0, 0, 16, 16, data[i].x, data[i].y, 16, 16);
-                        else if (data[i].dir == 'left')
-                            ctx.drawImage(sprite.player, 64, 0, 16, 16, data[i].x, data[i].y, 16, 16);
+                self.draw = function () {
+                    if (self.spdy == 0 && self.spdx == 0) {
+                        if (self.dir == 'right')
+                            ctx.drawImage(sprite.player, 0, 0, 16, 16, self.x, self.y, 16, 16);
+                        else if (self.dir == 'left')
+                            ctx.drawImage(sprite.player, 64, 0, 16, 16, self.x, self.y, 16, 16);
                     } else {
                         var pixels = 0;
-                        if (data[i].dir == 'right'){
-                            pixels = data[i].frame * 16;
-                            ctx.drawImage(sprite.player, pixels, 0, 16, 16, data[i].x, data[i].y, 16, 16);
+                        if (self.dir == 'right') {
+                            pixels = Player.list[i].frame * 16;
+                            ctx.drawImage(sprite.player, pixels, 0, 16, 16, self.x, self.y, 16, 16);
                         }
-                        if (data[i].dir == 'left') {
-                            pixels = (data[i].frame * 16) + 64;
-                            ctx.drawImage(sprite.player, pixels, 0, 16, 16, data[i].x, data[i].y, 16, 16);
+                        if (self.dir == 'left') {
+                            pixels = (Player.list[i].frame * 16) + 64;
+                            ctx.drawImage(sprite.player, pixels, 0, 16, 16, self.x, self.y, 16, 16);
                         }
+                    }
+                }
+                Player.list[self.id] = self;
+                return self;
+            };
+            Player.list = {};
+            socket.on('init', function (data) {
+                for (var i = 0; i < data.player.length; i++)
+                    new Player(data.player[i]);
+            });
+            socket.on('update', function (data) {
+                for (var i = 0; i < data.player.length; i++) {
+                    var pack = data.player[i];
+                    var p = Player.list[pack.id];
+                    if (p) {
+                        if (p.x !== undefined)
+                            p.x = pack.x;
+                        if (p.y !== undefined)
+                            p.y = pack.y;
+                        if (p.dir !== undefined)
+                            p.dir == pack.dir;
                     }
                 }
             });
+            socket.on('remove', function (data) {
+                for (var i = 0; i < data.player.length; i++)
+                    delete Player.list[data.player[i]];
+            });
+
             document.onkeydown = function (event) {
-                if (event.keyCode === 87)
+                if (event.keyCode === 87) {
                     socket.emit('keypress', {
                         inputId: 'up',
                         state: true
                     });
-                else if (event.keyCode === 83)
+                }
+                else if (event.keyCode === 83) {
                     socket.emit('keypress', {
                         inputId: 'down',
                         state: true
                     });
-                else if (event.keyCode === 65)
+                }
+                else if (event.keyCode === 65) {
                     socket.emit('keypress', {
                         inputId: 'left',
                         state: true
                     });
-                else if (event.keyCode === 68)
+                }
+                else if (event.keyCode === 68) {
                     socket.emit('keypress', {
                         inputId: 'right',
                         state: true
                     });
+                }
             }
 
             //keyups
             document.onkeyup = function (event) {
-                if (event.keyCode === 87)
+                if (event.keyCode === 87) {
                     socket.emit('keypress', {
                         inputId: 'up',
                         state: false,
-                        spd: 0
                     });
-                if (event.keyCode === 83)
+                } else
+                if (event.keyCode === 83) {
                     socket.emit('keypress', {
                         inputId: 'down',
                         state: false,
-                        spd: 0
                     });
-                if (event.keyCode === 65)
+                } else
+                if (event.keyCode === 65) {
                     socket.emit('keypress', {
                         inputId: 'left',
                         state: false,
-                        spd: 0
                     });
-                if (event.keyCode === 68)
+                } else
+                if (event.keyCode === 68) {
                     socket.emit('keypress', {
                         inputId: 'right',
                         state: false,
-                        spd: 0
                     });
+                }
+            }
+
+            function drawMap() {
+                for (var i in Player.list) {
+                    var map = Player.list[i].map;
+                    for (var j = 0; j < map.length; j++){
+                        for(var k = 0; k < map[j].length; k++){
+                            if (map[j][k] == 0)
+                                ctx.drawImage(sprite.grass1, k * 16, j * 16);
+                            if (map[j][k] == 1)
+                                ctx.drawImage(sprite.grass2, k * 16, j * 16);
+                        }
+                    }
+                }
+            }
+            function drawMapOverlay() {
+                for (var i in Player.list) {
+                    var mv = Player.list[i].mapOverlay;
+                    for (var j = 0; j < mv.length; j++) {
+                        for (var k = 0; k < mv[j].length; k++) {
+                            if (mv[j][k] == 1)
+                                ctx.drawImage(sprite.shrub1, k * 16, j * 16);
+                            if (mv[j][k] == 2)
+                                ctx.drawImage(sprite.shrub2, k * 16, j * 16);
+                            if (mv[j][k] == 3)
+                                ctx.drawImage(sprite.rock1, k * 16, j * 16);
+                            if (mv[j][k] == 4)
+                                ctx.drawImage(sprite.stump, k * 16, j * 16);
+                            if (mv[j][k] == 5)
+                                ctx.drawImage(sprite.tree1, k * 16, j * 16);
+                            if (mv[j][k] == 6)
+                                ctx.drawImage(sprite.tree2, k * 16, j * 16);
+                            if (mv[j][k] == 7)
+                                ctx.drawImage(sprite.tree3, k * 16, j * 16);
+                        }
+                    }
+                }
+            }
+            function drawPlayers() {
+                for (var i in Player.list) {
+                    Player.list[i].draw();
+                }
             }
 
             var chatting = false;
 
+            //rendering
+            function render() {
+                ctx.clearRect(0, 0, ctx.width, ctx.height);
+                drawMap();
+                drawMapOverlay();
+                drawPlayers();
+            }
             //game loop
-
+            
             setInterval(function () {
                 var chat = $("#chat");
                 if (chat.is(":hover"))
                     chatting = true;
                 else
                     chatting = false;
+                render();
             }, 25); //40fps
+          
+
         </script>
     </body>
 </html>

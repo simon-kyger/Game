@@ -19,85 +19,123 @@ var Player = function (id) {
         x: 128,
         y: 64,
         id: id,
-        number: Math.floor(10 * Math.Random),
         dirUp: false,
         dirDown: false,
         dirLeft: false,
         dirRight: false,
-        dir: 'right',
-        spd: 0,
-        frame: 0
+        dir: 'left',
+        spdy: 0,
+        spdx: 0,
+        frame: 0,
+        map: map,
+        mapOverlay: mapOverlay
     }
     self.updatePosition = function() {
-            if (self.dirUp)
-                self.y -= self.spd;
-            if (self.dirDown)
-                self.y += self.spd;
-            if (self.dirLeft)
-                self.x -= self.spd;
-            if (self.dirRight)
-                self.x += self.spd;
+        if (self.dirUp) {
+            self.y -= self.spdy;
+            self.dir = 'up';
+        }
+        if (self.dirDown) {
+            self.y += self.spdy;
+            self.dir = 'down';
+        }
+        if (self.dirLeft) {
+            self.x -= self.spdx;
+            self.dir = 'left';
+        }
+        if (self.dirRight) {
+            self.x += self.spdx;
+            self.dir = 'right';
+        }
+
     }
-    Player.List[id] = self;
+    
+    self.getInitPack = function() {
+        return {
+            id: self.id,
+            x: self.x,
+            y: self.y,
+            dirUp: self.dirUp,
+            dirDown: self.dirDown,
+            dirLeft: self.dirLeft,
+            dirRight: self.dirRight,
+            dir: self.dir,
+            spd: self.spd,
+            spdx: self.spdx,
+            spdy: self.spdy,
+            frame: self.frame,
+            map: self.map,
+            mapOverlay: self.mapOverlay,
+        };
+    }
+    self.getUpdatePack = function () {
+        return {
+            id: self.id,
+            x: self.x,
+            y: self.y,
+            dir: self.dir
+        };
+    }
+
+    Player.list[id] = self;
+    initPack.player.push(self.getInitPack());
     return self;
 }
-Player.List = {};
+Player.list = {};
 Player.onConnect = function (socket) {
     var player = Player(socket.id);
     socket.on('keypress', function (data) {
         if (data.inputId === 'up') {
             player.dirUp = data.state;
             if (data.state)
-                player.spd = 2;
+                player.spdy = 5;
             else
-                player.spd = 0;
-        }
+                player.spdy = 0;
+        } else
         if (data.inputId === 'down') {
             player.dirDown = data.state;
             if (data.state)
-                player.spd = 2;
+                player.spdy = 5;
             else
-                player.spd = 0;
-        }
+                player.spdy = 0;
+        } else
         if (data.inputId === 'left') {
             player.dirLeft = data.state;
             player.dir = data.inputId;
             if (data.state)
-                player.spd = 2;
+                player.spdx = 5;
             else
-                player.spd = 0;
-        }
+                player.spdx = 0;
+        } else
         if (data.inputId === 'right') {
             player.dirRight = data.state;
             player.dir = data.inputId;
             if (data.state)
-                player.spd = 2;
+                player.spdx = 5;
             else
-                player.spd = 0;
+                player.spdx = 0;
         }
     });
+    socket.emit('init', {
+        player: Player.getAllInitPack()
+    });
+}
+Player.getAllInitPack = function () {
+    var players = [];
+    for (var i in Player.list)
+        players.push(Player.list[i].getInitPack());
+    return players;
 }
 Player.onDisconnect = function (socket) {
     delete Player.list[socket.id];
+    removePack.player.push(socket.id);
 }
 Player.update = function () {
     var data = [];
-    for (var i in Player.List) {
-        var player = Player.List[i];
+    for (var i in Player.list) {
+        var player = Player.list[i];
         player.updatePosition();
-        if (player.frame > 3)
-            player.frame = 0;
-        data.push({
-            id: player.id,
-            x: player.x,
-            y: player.y,
-            dir: player.dir,
-            spd: player.spd,
-            frame: player.frame,
-            map: map,
-            mapoverlay: mapoverlay
-        });
-        player.frame++;
+        data.push(player.getUpdatePack());
     }
     return data;
 }
@@ -113,9 +151,12 @@ io.sockets.on('connection', function (socket) {
     //send a message to node console on server
     console.log('Someone has connected');
     socket.on('disconnect', function () {
+        var playerid = ("" + socket.id);
+        for (var i in SOCKET_CONNECTIONS)
+            SOCKET_CONNECTIONS[i].emit('addToChat', socket.id + ' has disconnected');
+        console.log('Player: ' + socket.id + ' has disconnected');
+        Player.onDisconnect(socket.id);
         delete SOCKET_CONNECTIONS[socket.id];
-        console.log('Someone disconnected');
-        delete Player.List[socket.id];
     });
     socket.on('chatMsg', function (message) {
         var playerid = ("" + socket.id);
@@ -138,7 +179,7 @@ var map = [
     [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
 ];
 
-var mapoverlay = [
+var mapOverlay = [
     [6, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 6, 0, 3, 7, 0, 0, 0],
     [0, 6, 5, 0, 1, 0, 0, 0, 0, 7, 6, 0, 0, 0, 0, 0, 1, 0, 0],
     [0, 2, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 6],
@@ -151,10 +192,23 @@ var mapoverlay = [
     [1, 0, 0, 0, 0, 0, 7, 1, 0, 0, 0, 0, 2, 0, 6, 0, 0, 1, 0]
 ];
 
+var initPack = {
+    player: []
+};
+var removePack = {
+    player: []
+};
+
 setInterval(function () {
-    var pack = Player.update();
+    var pack = {
+        player: Player.update(),
+    }
     for (var i in SOCKET_CONNECTIONS) {
         var socket = SOCKET_CONNECTIONS[i];
-        socket.emit('positionalData', pack);
+        socket.emit('init', initPack);
+        socket.emit('update', pack);
+        socket.emit('remove', removePack);
     }
-}, 50); //20fps
+    initPack.player = [];
+    removePack.player = [];
+}, 100); //10 times per second
