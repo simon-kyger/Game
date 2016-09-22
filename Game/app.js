@@ -145,7 +145,7 @@ Player.update = function () {
 
 //upon connection
 var SOCKET_CONNECTIONS = {};
-var UNIQUEID = 1; // this is needed javascript is stupid
+var UNIQUEID = 0; // this is needed javascript is stupid
                   // 0 refused to ever work on init package.
 io.sockets.on('connection', function (socket) {
     socket.id = UNIQUEID;
@@ -196,12 +196,8 @@ var mapOverlay = [
     [1, 0, 0, 0, 0, 0, 7, 1, 0, 0, 0, 0, 2, 0, 6, 0, 0, 1, 0]
 ];
 
-var initPack = {
-    player: []
-};
-var removePack = {
-    player: []
-};
+var initPack = {};
+var removePack = {};
 
 setInterval(function () {
     var pack = {

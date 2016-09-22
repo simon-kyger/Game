@@ -142,7 +142,7 @@
             Player.list = {};
             var selfId = null;
             socket.on('init', function (data) {
-                if (data.selfId)
+                if (data.selfId !== undefined)
                     selfId = data.selfId;
                 for (var i = 0; i < data.player.length; i++) {
                     new Player(data.player[i]);
