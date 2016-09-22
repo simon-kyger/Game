@@ -28,7 +28,9 @@ var Player = function (id) {
         spdx: 0,
         frame: 0,
         map: map,
-        mapOverlay: mapOverlay
+        mapOverlay: mapOverlay,
+        pclass: 'warrior',
+        img: '/client/sprites/warrior.png',
     }
     self.updatePosition = function() {
         if (self.dirUp) {
@@ -46,8 +48,7 @@ var Player = function (id) {
             self.dir = 'right';
         }
 
-    }
-    
+    }  
     self.getInitPack = function() {
         return {
             id: self.id,
@@ -63,6 +64,7 @@ var Player = function (id) {
             frame: self.frame,
             map: self.map,
             mapOverlay: self.mapOverlay,
+            pclass: self.pclass,
         };
     }
     self.getUpdatePack = function () {
@@ -115,7 +117,9 @@ Player.onConnect = function (socket) {
                 player.spdx = 0;
         }
     });
+
     socket.emit('init', {
+        selfId: socket.id,
         player: Player.getAllInitPack()
     });
 }
@@ -141,7 +145,8 @@ Player.update = function () {
 
 //upon connection
 var SOCKET_CONNECTIONS = {};
-var UNIQUEID = 0;
+var UNIQUEID = 1; // this is needed javascript is stupid
+                  // 0 refused to ever work on init package.
 io.sockets.on('connection', function (socket) {
     socket.id = UNIQUEID;
     UNIQUEID++;
