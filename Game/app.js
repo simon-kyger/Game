@@ -152,13 +152,15 @@ io.sockets.on('connection', function (socket) {
     UNIQUEID++;
     SOCKET_CONNECTIONS[socket.id] = socket;
     Player.onConnect(socket);
-    //send a message to node console on server
-    console.log('Someone has connected');
+    //send a message to node console on server and to the clients
+    console.log(socket.id + ' has connected.');
+    for (var i in SOCKET_CONNECTIONS)
+        SOCKET_CONNECTIONS[i].emit('addToChat', socket.id + ' has connected.');
     socket.on('disconnect', function () {
         var playerid = ("" + socket.id);
         for (var i in SOCKET_CONNECTIONS)
-            SOCKET_CONNECTIONS[i].emit('addToChat', socket.id + ' has disconnected');
-        console.log('Player: ' + socket.id + ' has disconnected');
+            SOCKET_CONNECTIONS[i].emit('addToChat', socket.id + ' has disconnected.');
+        console.log('Player: ' + socket.id + ' has disconnected.');
         Player.onDisconnect(socket);
         delete SOCKET_CONNECTIONS[socket.id];
     });
