@@ -29,7 +29,7 @@ body, html { height:100%; }
   background-color: rgba(0,0,0,0.5);
   overflow:hidden;
   width:100%;
-  height:90%;
+  height:85%;
 }
 .chat .messages:hover{
 
@@ -42,5 +42,5 @@ body, html { height:100%; }
   width: 100%;
   background-color: black;
   color: white;
-  height: 10%;
+  height: 15%
 }

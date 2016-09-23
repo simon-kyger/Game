@@ -11,48 +11,51 @@
             <canvas id="ctx"></canvas>
             <!--CHATUI-->
             <div id="chat" class="chat">
-                <div class="messages">
+                <div id="messages" class="messages">
                     <div>Welcome to Simon's Game Server</div>
                 </div>
-                <input class="chatinput"></input>
+                <input id="chatinput" class="chatinput"></input>
             </div>
             <!--ADDITIONALUI-->
         </div>
         <script>
             var socket = io();
-            var chat = $('.chat');
-            var printer = $('.messages', chat);
-            var chatinput = $('.chatinput', chat);
-            var printerH = printer.innerHeight();
-            var preventNewScroll = false;
-            function scrollBottom() {
-                if (!preventNewScroll) { // if mouse is not over printer
-                    printer.stop().animate({ scrollTop: printer[0].scrollHeight - printerH }, 600); // SET SCROLLER TO BOTTOM
+            var chat = $('#chat');
+            chat.printer = $('#messages', chat);
+            chat.chatinput = $('#chatinput', chat);
+            chat.height = chat.printer.height();
+            chat.preventNewScroll = false;
+            chat.scrollBottom = function() {
+                if (!chat.preventNewScroll) { // if mouse is not over printer
+                    chat.printer.stop().animate({
+                        scrollTop: chat.printer[0].scrollHeight - chat.height
+                    }, 600); // SET SCROLLER TO BOTTOM
                 }
             }
-            scrollBottom();
-            chatinput.keyup(postMessage);
-            function postMessage(e) {
+            chat.scrollBottom();
+            chat.postMessage = function (e) {
                 // after hitting enter but allowing new lines using shift+enter
                 if (e.which == 13 && !e.shiftKey) {
                     e.preventDefault();
-                    var msg = chatinput.val(); 
+                    var msg = chat.chatinput.val(); 
                     // not empty / space
                     if ($.trim(msg)) {
                         socket.emit('chatMsg', msg);
                     }
                 }
             }
+            chat.chatinput.keyup(chat.postMessage);
             // prevent scrolling when reading past messages
-            printer.hover(function (e) {
-                preventNewScroll = e.type == 'mouseenter' ? true : false;
-                if (!preventNewScroll) { scrollBottom(); } // On mouseleave go to bottom
+            chat.printer.hover(function (e) {
+                chat.preventNewScroll = e.type == 'mouseenter' ? true : false;
+                if (!chat.preventNewScroll) 
+                    chat.scrollBottom(); // On mouseleave go to bottom
             });
 
             socket.on('addToChat', function (data) {
-                printer.append('<div>' + data.replace(/\n/g, '<br>') + '</div>');
-                chatinput[0].value = ''; // CLEAR TEXTAREA
-                scrollBottom();
+                chat.printer.append('<div>' + data.replace(/\n/g, '<br>') + '</div>');
+                chat.chatinput[0].value = ''; // CLEAR TEXTAREA
+                chat.scrollBottom();
             });
 
             //GAME
@@ -130,6 +133,9 @@
                         self.frame+= .1;
                     }
                 }
+                self.move = function () {
+                    ctx.addEventListener('keyup')
+                }
                 if (self.map) {
                     for (var i = 0; i < self.map.length; i++)
                         self.mapy = self.mapy + TILEWIDTH;
@@ -139,8 +145,11 @@
                 Player.list[self.id] = self;
                 return self;
             };
+            //identification
             Player.list = {};
             var selfId = null;
+
+            //updates
             socket.on('init', function (data) {
                 if (data.selfId !== undefined)
                     selfId = data.selfId;
@@ -148,7 +157,6 @@
                     new Player(data.player[i]);
                 }
             });
-
             socket.on('update', function (data) {
                 for (var i = 0; i < data.player.length; i++) {
                     var pack = data.player[i];
@@ -171,7 +179,13 @@
                 for (var i = 0; i < data.player.length; i++)
                     delete Player.list[data.player[i]];
             });
+            
+            //UI state
+            function getContext() {
 
+            }
+
+            //game movement
             document.onkeydown = function (event) {
                 if (event.keyCode === 87) {
                     socket.emit('keypress', {
@@ -198,34 +212,34 @@
                     });
                 }
             }
-
-            //keyups
             document.onkeyup = function (event) {
                 if (event.keyCode === 87) {
                     socket.emit('keypress', {
                         inputId: 'up',
                         state: false,
                     });
-                } else
-                if (event.keyCode === 83) {
-                    socket.emit('keypress', {
-                        inputId: 'down',
-                        state: false,
-                    });
-                } else
-                if (event.keyCode === 65) {
-                    socket.emit('keypress', {
-                        inputId: 'left',
-                        state: false,
-                    });
-                } else
-                if (event.keyCode === 68) {
+                }
+                else if (event.keyCode === 83) {
+                        socket.emit('keypress', {
+                            inputId: 'down',
+                            state: false,
+                        });
+                }
+                else if (event.keyCode === 65) {
+                        socket.emit('keypress', {
+                            inputId: 'left',
+                            state: false,
+                        });
+                }
+                else if (event.keyCode === 68) {
                     socket.emit('keypress', {
                         inputId: 'right',
                         state: false,
                     });
                 }
             }
+
+            //rendering
             var TILEWIDTH = 16;
             var TILEHEIGHT = 16;
             function drawMap() {
@@ -270,8 +284,6 @@
                 }
             }
 
-            var chatting = false;
-
             //rendering
             function render() {
                 ctx.clearRect(0, 0, ctx.width, ctx.height);
@@ -279,12 +291,13 @@
                 drawMapOverlay();
                 drawPlayers();
             }
-            //game loop
-            
+
+            //game loop           
             setInterval(function () {
                 if (selfId == null)
-                    return;
+                    return;      
                 render();
+                getContext();
             }, 20); //50fps
           
 

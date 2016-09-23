@@ -145,8 +145,7 @@ Player.update = function () {
 
 //upon connection
 var SOCKET_CONNECTIONS = {};
-var UNIQUEID = 0; // this is needed javascript is stupid
-                  // 0 refused to ever work on init package.
+var UNIQUEID = 0;
 io.sockets.on('connection', function (socket) {
     socket.id = UNIQUEID;
     UNIQUEID++;
