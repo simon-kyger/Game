@@ -168,7 +168,7 @@ io.sockets.on('connection', function (socket) {
         for (var i in SOCKET_CONNECTIONS) {
             SOCKET_CONNECTIONS[i].emit('addToChat', playerid + ': ' + message);
         }
-    });
+    });   
 });
 
 var map = [

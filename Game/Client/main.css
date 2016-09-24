@@ -44,3 +44,11 @@ body, html { height:100%; }
   color: white;
   height: 15%
 }
+
+#fps {
+   position: absolute;
+   font-family: 'Lucida Console';
+   font-size: 18px;
+   font-weight: bold;
+   color: red;
+}

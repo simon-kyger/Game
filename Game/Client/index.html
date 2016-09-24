@@ -16,6 +16,7 @@
                 </div>
                 <input id="chatinput" class="chatinput"></input>
             </div>
+            <div id="fps"></div>
             <!--ADDITIONALUI-->
         </div>
         <script>
@@ -47,7 +48,11 @@
             chat.chatinput.keyup(chat.postMessage);
             // prevent scrolling when reading past messages
             chat.printer.hover(function (e) {
-                chat.preventNewScroll = e.type == 'mouseenter' ? true : false;
+                if (e.type == 'mouseenter')
+                    chat.preventNewScroll = true;
+                else
+                    chat.preventNewScroll = false;
+
                 if (!chat.preventNewScroll) 
                     chat.scrollBottom(); // On mouseleave go to bottom
             });
@@ -147,7 +152,6 @@
             };
             //identification
             Player.list = {};
-            var selfId = null;
 
             //updates
             socket.on('init', function (data) {
@@ -243,6 +247,8 @@
             var TILEWIDTH = 16;
             var TILEHEIGHT = 16;
             function drawMap() {
+                if (selfId == null)
+                    return;
                 var map = Player.list[selfId].map;
                 var offsetx = WIDTH / 2 - Player.list[selfId].x;
                 var offsety = HEIGHT / 2 - Player.list[selfId].y;
@@ -257,6 +263,8 @@
             }
 
             function drawMapOverlay() {
+                if (selfId == null)
+                    return;
                 var mv = Player.list[selfId].mapOverlay;
                 for (var j = 0; j < mv.length; j++) {
                     for (var k = 0; k < mv[j].length; k++) {
@@ -285,22 +293,30 @@
             }
 
             //rendering
+
             function render() {
+                if (selfId == null)
+                    return;
                 ctx.clearRect(0, 0, ctx.width, ctx.height);
                 drawMap();
                 drawMapOverlay();
                 drawPlayers();
             }
+            var selfId;
+             //game loop
 
-            //game loop           
-            setInterval(function () {
-                if (selfId == null)
-                    return;      
-                render();
-                getContext();
-            }, 20); //50fps
-          
-
+            function init() {
+                var previousframetime = 0;
+                function main(time) {
+                    var FPS = Math.floor(1000 / (time - previousframetime));
+                    previousframetime = time;
+                    $('#fps').html('FPS:' + FPS);
+                    render();
+                    requestAnimationFrame(main);
+                }
+                requestAnimationFrame(main);
+            }
+            window.onload = init;
         </script>
     </body>
 </html>
