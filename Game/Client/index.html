@@ -313,12 +313,16 @@
              //game loop
 
             function init() {
-                var previousframetime = 0;
+                var previoustime = Date.now();
+                var frames = 0;
                 function main(time) {
-                    var FPS = Math.floor(1000 / (time - previousframetime));
-                    previousframetime = time;
-                    $('#fps').html('FPS:' + FPS);
                     render();
+                    frames++;
+                    while (Date.now() - previoustime > 1000) {
+                        $('#fps').html('FPS:' + frames);
+                        previoustime += 1000;
+                        frames = 0;
+                    }
                     requestAnimationFrame(main);
                 }
                 requestAnimationFrame(main);
