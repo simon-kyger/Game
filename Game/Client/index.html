@@ -4,6 +4,7 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
         <link href="client/main.css" rel="stylesheet"</link>
+        <link rel="shortcut icon" href="favicon.ico" type='image/x-icon'/ >
     </head>
     <body>
         <div id="game">
@@ -112,8 +113,11 @@
                     pclass: init.pclass,
                 }
                 self.draw = function () {
-                    var x = self.x - Player.list[selfId].x + window.innerWidth / 16 / 2;
-                    var y = self.y - Player.list[selfId].y + window.innerHeight / 16 / 2;
+                    var map = Player.list[selfId].map;
+                    var mw = map[0].length;
+                    var mh = map.length;
+                    var x = self.x - Player.list[selfId].x + 140; //MAGIC NUMBERS
+                    var y = self.y - Player.list[selfId].y + 60; //ANOTHER MAGIC NUMBER
                     if (self.spdy == 0 && self.spdx == 0) {
                         if (self.dir == 'right'){
                             ctx.drawImage(sprite.player, 0, 0, 16, 16, x, y, 16, 16);
@@ -235,14 +239,12 @@
                 var map = p.map;
                 var maparrw = p.map[0].length;
                 var maparrh = p.map.length;
-                var mapw = maparrw * TILEWIDTH;
-                var maph = maparrh * TILEHEIGHT;
                 for (var j = 0; j < maparrh; j++){
-                    for(var k = 0; k < maparrw; k++){
-                        if (map[j][k] == 0)
-                            ctx.drawImage(sprite.grass1,0,0,TILEWIDTH,TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT)- p.y,TILEWIDTH,TILEHEIGHT);
-                        if (map[j][k] == 1)
-                            ctx.drawImage(sprite.grass2,0,0,TILEWIDTH,TILEHEIGHT, (k * TILEWIDTH)- p.x, (j * TILEHEIGHT) - p.y,TILEWIDTH,TILEHEIGHT);
+                    for (var k = 0; k < maparrw; k++) {
+                        if(map[j][k] == 0)
+                            ctx.drawImage(sprite.grass1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT - p.y, TILEWIDTH, TILEHEIGHT);
+                        if(map[j][k] == 1)
+                            ctx.drawImage(sprite.grass1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT - p.y, TILEWIDTH, TILEHEIGHT);
                     }
                 }
             }
@@ -255,19 +257,19 @@
                 for (var j = 0; j < mvh; j++) {
                     for (var k = 0; k < mvw; k++) {
                         if (mv[j][k] == 1)
-                            ctx.drawImage(sprite.shrub1, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
+                            ctx.drawImage(sprite.shrub1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
                         if (mv[j][k] == 2)
-                            ctx.drawImage(sprite.shrub2, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
+                            ctx.drawImage(sprite.shrub2, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
                         if (mv[j][k] == 3)
-                            ctx.drawImage(sprite.rock1, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
+                            ctx.drawImage(sprite.rock1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
                         if (mv[j][k] == 4)
-                            ctx.drawImage(sprite.stump, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
+                            ctx.drawImage(sprite.stump, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
                         if (mv[j][k] == 5)
-                            ctx.drawImage(sprite.tree1, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
+                            ctx.drawImage(sprite.tree1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
                         if (mv[j][k] == 6)
-                            ctx.drawImage(sprite.tree2, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
+                            ctx.drawImage(sprite.tree2, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
                         if (mv[j][k] == 7)
-                            ctx.drawImage(sprite.tree3, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
+                            ctx.drawImage(sprite.tree3, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
                     }
                 }
             }
