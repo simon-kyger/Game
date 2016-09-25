@@ -9,6 +9,7 @@
         <div id="game">
             <!--GAMEBOARD-->
             <canvas id="ctx"></canvas>
+            <canvas id="ctx2"></canvas>
             <!--CHATUI-->
             <div id="chat" class="chat">
                 <div id="messages" class="messages">
@@ -67,8 +68,8 @@
             var ctx = document.getElementById("ctx").getContext("2d");
             ctx.width = window.innerWidth;
             ctx.height = window.innerHeight;
-            const WIDTH = 16;
-            const HEIGHT = 16;
+            var WIDTH = ctx.width;
+            var HEIGHT = ctx.height;
             var sprite = {};
             sprite.player = new Image();
             sprite.player.src = '/client/sprites/warrior.png';
@@ -108,44 +109,32 @@
                     frame: init.frame,
                     mapx: null,
                     mapy: null,
-                    img: sprite.player,
                     pclass: init.pclass,
                 }
                 self.draw = function () {
-                    var offsetx = self.x - Player.list[selfId].x + WIDTH / 2;
-                    var offsety = self.y - Player.list[selfId].x + HEIGHT / 2;
-                    var width = self.img.width * 2;
-                    var height = self.img.height * 2;
+                    var x = self.x - Player.list[selfId].x + window.innerWidth / 16 / 2;
+                    var y = self.y - Player.list[selfId].y + window.innerHeight / 16 / 2;
                     if (self.spdy == 0 && self.spdx == 0) {
                         if (self.dir == 'right'){
-                            ctx.drawImage(self.img, 0, 0, 16, 16, self.x, self.y, 16, 16);
+                            ctx.drawImage(sprite.player, 0, 0, 16, 16, x, y, 16, 16);
                         }
                         if (self.dir == 'left'){
-                            ctx.drawImage(self.img, 64, 0, 16, 16, self.x, self.y, 16, 16);
+                            ctx.drawImage(sprite.player, 64, 0, 16, 16, x, y, 16, 16);
                         }
                     }
                     else {
                         var sourceoffset = Math.floor(self.frame) % 4;
                         if (self.dir == 'right') {
                             sourceoffset = sourceoffset * 16;
-                            ctx.drawImage(self.img, sourceoffset, 0, 16, 16, self.x, self.y, 16, 16);
+                            ctx.drawImage(sprite.player, sourceoffset, 0, 16, 16, x, y, 16, 16);
                         }
                         if (self.dir == 'left') {
                             sourceoffset = sourceoffset * 16 + 64;
-                            ctx.drawImage(self.img, sourceoffset, 0, 16, 16, self.x, self.y, 16, 16);
+                            ctx.drawImage(sprite.player, sourceoffset, 0, 16, 16, x, y, 16, 16);
                         }
 
                         self.frame+= .1;
                     }
-                }
-                self.move = function () {
-                    ctx.addEventListener('keyup')
-                }
-                if (self.map) {
-                    for (var i = 0; i < self.map.length; i++)
-                        self.mapy = self.mapy + TILEWIDTH;
-                    for (var i = 0; i < self.map[0].length; i++)
-                        self.mapx = self.mapx + TILEHEIGHT;
                 }
                 Player.list[self.id] = self;
                 return self;
@@ -183,11 +172,6 @@
                 for (var i = 0; i < data.player.length; i++)
                     delete Player.list[data.player[i]];
             });
-            
-            //UI state
-            function getContext() {
-
-            }
 
             //game movement
             document.onkeydown = function (event) {
@@ -247,41 +231,43 @@
             var TILEWIDTH = 16;
             var TILEHEIGHT = 16;
             function drawMap() {
-                if (selfId == null)
-                    return;
-                var map = Player.list[selfId].map;
-                var offsetx = WIDTH / 2 - Player.list[selfId].x;
-                var offsety = HEIGHT / 2 - Player.list[selfId].y;
-                for (var j = 0; j < map.length; j++){
-                    for(var k = 0; k < map[j].length; k++){
+                var p = Player.list[selfId];
+                var map = p.map;
+                var maparrw = p.map[0].length;
+                var maparrh = p.map.length;
+                var mapw = maparrw * TILEWIDTH;
+                var maph = maparrh * TILEHEIGHT;
+                for (var j = 0; j < maparrh; j++){
+                    for(var k = 0; k < maparrw; k++){
                         if (map[j][k] == 0)
-                            ctx.drawImage(sprite.grass1, k * TILEWIDTH, j * TILEHEIGHT);
+                            ctx.drawImage(sprite.grass1,0,0,TILEWIDTH,TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT)- p.y,TILEWIDTH,TILEHEIGHT);
                         if (map[j][k] == 1)
-                            ctx.drawImage(sprite.grass2, k * TILEWIDTH, j * TILEHEIGHT);
+                            ctx.drawImage(sprite.grass2,0,0,TILEWIDTH,TILEHEIGHT, (k * TILEWIDTH)- p.x, (j * TILEHEIGHT) - p.y,TILEWIDTH,TILEHEIGHT);
                     }
                 }
             }
 
             function drawMapOverlay() {
-                if (selfId == null)
-                    return;
-                var mv = Player.list[selfId].mapOverlay;
-                for (var j = 0; j < mv.length; j++) {
-                    for (var k = 0; k < mv[j].length; k++) {
+                var p = Player.list[selfId];
+                var mv = p.mapOverlay;
+                var mvw = p.mapOverlay[0].length;
+                var mvh = p.mapOverlay.length;
+                for (var j = 0; j < mvh; j++) {
+                    for (var k = 0; k < mvw; k++) {
                         if (mv[j][k] == 1)
-                            ctx.drawImage(sprite.shrub1, k * TILEWIDTH, j * TILEHEIGHT);
+                            ctx.drawImage(sprite.shrub1, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
                         if (mv[j][k] == 2)
-                            ctx.drawImage(sprite.shrub2, k * TILEWIDTH, j * TILEHEIGHT);
+                            ctx.drawImage(sprite.shrub2, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
                         if (mv[j][k] == 3)
-                            ctx.drawImage(sprite.rock1, k * TILEWIDTH, j * TILEHEIGHT);
+                            ctx.drawImage(sprite.rock1, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
                         if (mv[j][k] == 4)
-                            ctx.drawImage(sprite.stump, k * TILEWIDTH, j * TILEHEIGHT);
+                            ctx.drawImage(sprite.stump, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
                         if (mv[j][k] == 5)
-                            ctx.drawImage(sprite.tree1, k * TILEWIDTH, j * TILEHEIGHT);
+                            ctx.drawImage(sprite.tree1, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
                         if (mv[j][k] == 6)
-                            ctx.drawImage(sprite.tree2, k * TILEWIDTH, j * TILEHEIGHT);
+                            ctx.drawImage(sprite.tree2, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
                         if (mv[j][k] == 7)
-                            ctx.drawImage(sprite.tree3, k * TILEWIDTH, j * TILEHEIGHT);
+                            ctx.drawImage(sprite.tree3, 0, 0, TILEWIDTH, TILEHEIGHT, (k * TILEWIDTH) - p.x, (j * TILEHEIGHT) / 2 - p.y, 16, 16);
                     }
                 }
             }
@@ -291,8 +277,28 @@
                     Player.list[i].draw();
                 }
             }
+            function drawLighting() {
+                var shadowCanvas = document.getElementById("ctx2");
+                var shadowCtx = shadowCanvas.getContext('2d');
+                shadowCanvas.width = ctx.width;
+                shadowCanvas.height = ctx.height;
 
-            //rendering
+                // Make it black
+                shadowCtx.fillStyle = '#000';
+                shadowCtx.fillRect(0, 0, ctx.width, ctx.height);
+
+                // Turn canvas into mask
+                shadowCtx.globalCompositeOperation = "destination-out";
+
+                // Light Source on player
+                var x = WIDTH/2;
+                var y = HEIGHT/2;
+                gradient = shadowCtx.createRadialGradient(x, y, 1000, x, y, 100);
+                gradient.addColorStop(0, "rgba(255, 255, 255, .1)");
+                gradient.addColorStop(1, "rgba(255, 255, 255, 1.0)");
+                shadowCtx.fillStyle = gradient;
+                shadowCtx.fillRect(0, 0, ctx.width, ctx.height);
+            }
 
             function render() {
                 if (selfId == null)
@@ -301,6 +307,7 @@
                 drawMap();
                 drawMapOverlay();
                 drawPlayers();
+                drawLighting();
             }
             var selfId;
              //game loop
@@ -317,6 +324,8 @@
                 requestAnimationFrame(main);
             }
             window.onload = init;
+
+
         </script>
     </body>
 </html>
