@@ -236,20 +236,23 @@
 
             //rendering
             function drawMap() {
+                ctx.save();
                 var p = Player.list[selfId];
                 var s = 8; //scale
+                var jitter;
                 for (var j = 0; j < p.map.length; j++){
                     for (var k = 0; k < p.map[0].length; k++) {
-                        if(p.map[j][k] == 0)
+                        if (p.map[j][k] == 0)
                             ctx.drawImage(sprite.grass1, 0, 0, TW, TH, (k * TW * s - p.x)+(WIDTH/2), (j * s * TH - p.y)+(HEIGHT/2), TW*s, TH*s);
-                        if(p.map[j][k] == 1)
+                        if (p.map[j][k] == 1)
                             ctx.drawImage(sprite.grass2, 0, 0, TW, TH, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s, TH * s);
                     }
                 }
+                ctx.restore();
             }
             function drawMapOverlay() {
                 var p = Player.list[selfId];
-                var s = 8; //scale
+                var s = 1; //scale
                 for (var j = 0; j < p.mapOverlay.length; j++) {
                     for (var k = 0; k < p.mapOverlay[0].length; k++) {
                         if (p.mapOverlay[j][k] == 1)
