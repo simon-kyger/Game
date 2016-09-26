@@ -15,20 +15,19 @@ server.listen(port);
 
 const TILEWIDTH = 16;
 const TILEHEIGHT = 16;
-const MAGICXCONSTANT = 140;
-const MAGICYCONSTANT = 60;
+const SCALE = 8;
 //player Class
 var Player = function (id) {
     var self = {
-        x: 0,
-        y: 0,
+        x: 960,
+        y: 544,
         id: id,
         movUp: false,
         movDown: false,
         movLeft: false,
         movRight: false,
         dir: 'left',
-        vel: 2,
+        vel: 16,
         spd: 0,
         frame: 0,
         width: TILEWIDTH,
@@ -65,8 +64,10 @@ var Player = function (id) {
             self.x = 0;
         if (self.y < 0)
             self.y = 0;
-        if (self.x > (map[0].length) * TILEWIDTH / 2)
-            self.x = (map[0].length) * TILEWIDTH / 2;
+        if (self.x > ((map[0].length - 1) * TILEWIDTH * SCALE))
+            self.x = (map[0].length - 1) * TILEWIDTH * SCALE;
+        if (self.y > ((map.length - 1) * TILEWIDTH * SCALE))
+            self.y = (map.length - 1) * TILEWIDTH * SCALE;
     }  
     self.getInitPack = function() {
         return {
@@ -173,14 +174,17 @@ io.sockets.on('connection', function (socket) {
 });
 
 var map = [
-    [0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0],
-    [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
-    [0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1],
-    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-    [0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0],
-    [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1],
+    [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+    [0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1],
+    [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+    [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+    [0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
 
 ];
 
@@ -194,7 +198,7 @@ var mapOverlay = [
     [0, 0, 3, 3, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 6, 1, 2, 2],
     [2, 1, 0, 1, 0, 4, 0, 0, 2, 0, 2, 3, 0, 0, 1, 1, 0, 0, 2],
     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 0, 0, 0, 0, 0, 7, 1, 0, 0, 0, 0, 2, 0, 6, 0, 0, 1, 0],
+    [1, 0, 0, 0, 0, 0, 7, 1, 0, 0, 0, 0, 2, 0, 2, 0, 0, 1, 0],
     [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
 ];
 

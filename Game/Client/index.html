@@ -9,7 +9,7 @@
     <body>
         <div id="game">
             <!--GAMEBOARD-->
-            <canvas id="ctx"></canvas>
+            <canvas id="ctx" width="1920" height="1080"></canvas>
             <canvas id="ctx2"></canvas>
             <!--CHATUI-->
             <div id="chat" class="chat">
@@ -66,11 +66,17 @@
             });
 
             //GAME
+            //width of height of dev env
+            var WIDTH = 1920;
+            var HEIGHT = 1080;
+            //width and height of tiles
+            var TW = 16;
+            var TH = 16;
             var ctx = document.getElementById("ctx").getContext("2d");
             ctx.width = window.innerWidth;
             ctx.height = window.innerHeight;
-            var WIDTH = ctx.width;
-            var HEIGHT = ctx.height;
+
+            ctx.imageSmoothingEnabled = false;
             var sprite = {};
             sprite.player = new Image();
             sprite.player.src = '/client/sprites/warrior.png';
@@ -113,28 +119,26 @@
                     pclass: init.pclass,
                 }
                 self.draw = function () {
-                    var map = Player.list[selfId].map;
-                    var mw = map[0].length;
-                    var mh = map.length;
-                    var x = self.x - Player.list[selfId].x
-                    var y = self.y - Player.list[selfId].y
+                    var x = self.x - Player.list[selfId].x + WIDTH / 2;
+                    var y = self.y - Player.list[selfId].y + HEIGHT / 2;
+                    var s = 8; //scale
                     if (self.spd == 0) {
                         if (self.dir == 'right'){
-                            ctx.drawImage(sprite.player, 0, 0, 16, 16, x, y, 16, 16);
+                            ctx.drawImage(sprite.player, 0, 0, 16, 16, x, y, TW * s, TH * s);
                         }
                         if (self.dir == 'left'){
-                            ctx.drawImage(sprite.player, 64, 0, 16, 16, x, y, 16, 16);
+                            ctx.drawImage(sprite.player, 64, 0, 16, 16, x, y, TW * s, TH * s);
                         }
                     }
                     else {
                         var sourceoffset = Math.floor(self.frame) % 4;
                         if (self.dir == 'right') {
                             sourceoffset = sourceoffset * 16;
-                            ctx.drawImage(sprite.player, sourceoffset, 0, 16, 16, x, y, 16, 16);
+                            ctx.drawImage(sprite.player, sourceoffset, 0, 16, 16, x, y, TW * s, TH * s);
                         }
                         if (self.dir == 'left') {
                             sourceoffset = sourceoffset * 16 + 64;
-                            ctx.drawImage(sprite.player, sourceoffset, 0, 16, 16, x, y, 16, 16);
+                            ctx.drawImage(sprite.player, sourceoffset, 0, 16, 16, x, y, TW * s, TH * s);
                         }
 
                         self.frame+= .1;
@@ -146,130 +150,122 @@
             //identification
             Player.list = {};
 
-            function update() {
-                //recieved
-                socket.on('init', function (data) {
-                    if (data.selfId !== undefined)
-                        selfId = data.selfId;
-                    for (var i = 0; i < data.player.length; i++) {
-                        new Player(data.player[i]);
-                    }
-                });
-                socket.on('update', function (data) {
-                    for (var i = 0; i < data.player.length; i++) {
-                        var pack = data.player[i];
-                        var p = Player.list[pack.id];
-                        if (p) {
-                            if (p.x !== undefined)
-                                p.x = pack.x;
-                            if (p.y !== undefined)
-                                p.y = pack.y;
-                            if (p.dir !== undefined)
-                                p.dir = pack.dir;
-                            if (p.spd !== undefined)
-                                p.spd = pack.spd;
-                        }
-                    }
-                });
-                socket.on('remove', function (data) {
-                    for (var i = 0; i < data.player.length; i++)
-                        delete Player.list[data.player[i]];
-                });
-                if (selfId == null)
-                    return;
-                //sends
-                document.onkeydown = function (event) {
-                    if (event.keyCode === 87) {
-                        socket.emit('keypress', {
-                            inputId: 'up',
-                            state: true
-                        });
-                    }
-                    else if (event.keyCode === 83) {
-                        socket.emit('keypress', {
-                            inputId: 'down',
-                            state: true
-                        });
-                    }
-                    else if (event.keyCode === 65) {
-                        socket.emit('keypress', {
-                            inputId: 'left',
-                            state: true
-                        });
-                    }
-                    else if (event.keyCode === 68) {
-                        socket.emit('keypress', {
-                            inputId: 'right',
-                            state: true
-                        });
+            //recieved
+            socket.on('init', function (data) {
+                if (data.selfId !== undefined)
+                    selfId = data.selfId;
+                for (var i = 0; i < data.player.length; i++) {
+                    new Player(data.player[i]);
+                }
+            });
+            socket.on('update', function (data) {
+                for (var i = 0; i < data.player.length; i++) {
+                    var pack = data.player[i];
+                    var p = Player.list[pack.id];
+                    if (p) {
+                        if (p.x !== undefined)
+                            p.x = pack.x;
+                        if (p.y !== undefined)
+                            p.y = pack.y;
+                        if (p.dir !== undefined)
+                            p.dir = pack.dir;
+                        if (p.spd !== undefined)
+                            p.spd = pack.spd;
                     }
                 }
-                document.onkeyup = function (event) {
-                    if (event.keyCode === 87) {
-                        socket.emit('keypress', {
-                            inputId: 'up',
-                            state: false,
-                        });
-                    }
-                    else if (event.keyCode === 83) {
-                        socket.emit('keypress', {
-                            inputId: 'down',
-                            state: false,
-                        });
-                    }
-                    else if (event.keyCode === 65) {
-                        socket.emit('keypress', {
-                            inputId: 'left',
-                            state: false,
-                        });
-                    }
-                    else if (event.keyCode === 68) {
-                        socket.emit('keypress', {
-                            inputId: 'right',
-                            state: false,
-                        });
-                    }
+            });
+            socket.on('remove', function (data) {
+                for (var i = 0; i < data.player.length; i++)
+                    delete Player.list[data.player[i]];
+            });
+
+            //sends
+            document.onkeydown = function (event) {
+                if (event.keyCode === 87) {
+                    socket.emit('keypress', {
+                        inputId: 'up',
+                        state: true
+                    });
+                }
+                else if (event.keyCode === 83) {
+                    socket.emit('keypress', {
+                        inputId: 'down',
+                        state: true
+                    });
+                }
+                else if (event.keyCode === 65) {
+                    socket.emit('keypress', {
+                        inputId: 'left',
+                        state: true
+                    });
+                }
+                else if (event.keyCode === 68) {
+                    socket.emit('keypress', {
+                        inputId: 'right',
+                        state: true
+                    });
+                }
+            }
+            document.onkeyup = function (event) {
+                if (event.keyCode === 87) {
+                    socket.emit('keypress', {
+                        inputId: 'up',
+                        state: false,
+                    });
+                }
+                else if (event.keyCode === 83) {
+                    socket.emit('keypress', {
+                        inputId: 'down',
+                        state: false,
+                    });
+                }
+                else if (event.keyCode === 65) {
+                    socket.emit('keypress', {
+                        inputId: 'left',
+                        state: false,
+                    });
+                }
+                else if (event.keyCode === 68) {
+                    socket.emit('keypress', {
+                        inputId: 'right',
+                        state: false,
+                    });
                 }
             }
 
+
             //rendering
-            var TILEWIDTH = 16;
-            var TILEHEIGHT = 16;
             function drawMap() {
                 var p = Player.list[selfId];
-                var map = p.map;
-                var maparrw = p.map[0].length;
-                var maparrh = p.map.length;
-                for (var j = 0; j < maparrh; j++){
-                    for (var k = 0; k < maparrw; k++) {
-                        //if(map[j][k] == 0)
-                            ctx.drawImage(sprite.grass1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT - p.y, TILEWIDTH, TILEHEIGHT);
-                        //if(map[j][k] == 1)
-                        //    ctx.drawImage(sprite.grass1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT - p.y, TILEWIDTH, TILEHEIGHT);
+                var s = 8; //scale
+                for (var j = 0; j < p.map.length; j++){
+                    for (var k = 0; k < p.map[0].length; k++) {
+                        if(p.map[j][k] == 0)
+                            ctx.drawImage(sprite.grass1, 0, 0, TW, TH, (k * TW * s - p.x)+(WIDTH/2), (j * s * TH - p.y)+(HEIGHT/2), TW*s, TH*s);
+                        if(p.map[j][k] == 1)
+                            ctx.drawImage(sprite.grass2, 0, 0, TW, TH, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s, TH * s);
                     }
                 }
             }
             function drawMapOverlay() {
                 var p = Player.list[selfId];
-                var mv = p.mapOverlay;
-                var mvw = p.mapOverlay[0].length;
-                var mvh = p.mapOverlay.length;
-                for (var j = 0; j < mvh; j++) {
-                    for (var k = 0; k < mvw; k++) {
-                        if (mv[j][k] == 1)
-                            ctx.drawImage(sprite.shrub1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
-                        if (mv[j][k] == 2)
-                            ctx.drawImage(sprite.shrub2, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
-                        if (mv[j][k] == 3)
-                            ctx.drawImage(sprite.rock1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
-                        if (mv[j][k] == 4)
-                            ctx.drawImage(sprite.stump, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
-                        if (mv[j][k] == 5)
-                            ctx.drawImage(sprite.tree1, 0, 0, TILEWIDTH*2, TILEHEIGHT*2, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, TILEWIDTH*2, TILEHEIGHT*2);
-                        if (mv[j][k] == 6)
-                            ctx.drawImage(sprite.tree2, 0, 0, TILEWIDTH*2, TILEHEIGHT*4, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, TILEWIDTH*2, TILEHEIGHT*4);
-                        if (mv[j][k] == 7)
-                            ctx.drawImage(sprite.tree3, 0, 0, TILEWIDTH*2, TILEHEIGHT*4, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, TILEWIDTH*2, TILEHEIGHT*2);
+                var s = 8; //scale
+                for (var j = 0; j < p.mapOverlay.length; j++) {
+                    for (var k = 0; k < p.mapOverlay[0].length; k++) {
+                        if (p.mapOverlay[j][k] == 1)
+                            ctx.drawImage(sprite.shrub1, 0, 0, TW, TH, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s, TH * s);
+                        if (p.mapOverlay[j][k] == 2)
+                            ctx.drawImage(sprite.shrub2, 0, 0, TW, TH, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s, TH * s);
+                        if (p.mapOverlay[j][k] == 3)
+                            ctx.drawImage(sprite.rock1, 0, 0, TW, TH, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s, TH * s);
+                        if (p.mapOverlay[j][k] == 4)
+                            ctx.drawImage(sprite.stump, 0, 0, TW, TH, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s, TH * s);
+                        if (p.mapOverlay[j][k] == 5)
+                            ctx.drawImage(sprite.tree1, 0, 0, TW * 2, TH * 2, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s * 2, TH * s * 2);
+                        if (p.mapOverlay[j][k] == 6)
+                            ctx.drawImage(sprite.tree2, 0, 0, TW * 2, TH * 4, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s * 2, TH * s * 4);
+                        if (p.mapOverlay[j][k] == 7)
+                            ctx.drawImage(sprite.tree3, 0, 0, TW * 2, TH * 4, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s * 2, TH * s * 2);
                     }
                 }
             }
@@ -304,11 +300,11 @@
             function render() {
                 if (selfId == null)
                     return;
-                ctx.clearRect(0, 0, ctx.width, ctx.height);
+                ctx.clearRect(0, 0, WIDTH, HEIGHT);
                 drawMap();
-                //drawMapOverlay();
+                drawMapOverlay();
                 drawPlayers();
-                //drawLighting();
+                drawLighting();
             }
 
             var selfId;
@@ -317,9 +313,8 @@
             function init() {
                 var previoustime = Date.now();
                 var frames = 0;
-                update();
+                render();
                 function main(time) {
-                    update();
                     render();
                     frames++;
                     while (Date.now() - previoustime > 1000) {
