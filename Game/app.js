@@ -13,54 +13,74 @@ app.use('/client', express.static(__dirname + '/client'));
 //on
 server.listen(port);
 
+const TILEWIDTH = 16;
+const TILEHEIGHT = 16;
+const MAGICXCONSTANT = 140;
+const MAGICYCONSTANT = 60;
 //player Class
 var Player = function (id) {
     var self = {
         x: 0,
         y: 0,
         id: id,
-        dirUp: false,
-        dirDown: false,
-        dirLeft: false,
-        dirRight: false,
+        movUp: false,
+        movDown: false,
+        movLeft: false,
+        movRight: false,
         dir: 'left',
-        spdy: 0,
-        spdx: 0,
+        vel: 2,
+        spd: 0,
         frame: 0,
+        width: TILEWIDTH,
+        height: TILEHEIGHT,
         map: map,
         mapOverlay: mapOverlay,
         pclass: 'warrior',
         img: '/client/sprites/warrior.png',
     }
-    self.updatePosition = function() {
-        if (self.dirUp) {
-            self.y -= self.spdy;
+    self.updatePosition = function () {
+        if (self.movUp) {
+            self.spd = self.vel;
+            self.y -= self.spd;
         }
-        if (self.dirDown) {
-            self.y += self.spdy;
+        if (self.movDown) {
+            self.spd = self.vel;
+            self.y += self.vel;
         }
-        if (self.dirLeft) {
-            self.x -= self.spdx;
+        if (self.movLeft) {
+            self.spd = self.vel;
+            self.x -= self.spd;
             self.dir = 'left';
         }
-        if (self.dirRight) {
-            self.x += self.spdx;
+        if (self.movRight) {
+            self.spd = self.vel;
+            self.x += self.spd;
             self.dir = 'right';
         }
-
+        //required for animation stop
+        if (!self.movRight && !self.movLeft && !self.movDown && !self.movUp)
+            self.spd = 0;
+        //map absolute boundaries
+        if (self.x < 0)
+            self.x = 0;
+        if (self.y < 0)
+            self.y = 0;
+        if (self.x > (map[0].length) * TILEWIDTH / 2)
+            self.x = (map[0].length) * TILEWIDTH / 2;
     }  
     self.getInitPack = function() {
         return {
             id: self.id,
             x: self.x,
             y: self.y,
-            dirUp: self.dirUp,
-            dirDown: self.dirDown,
-            dirLeft: self.dirLeft,
-            dirRight: self.dirRight,
+            movUp: self.movUp,
+            movDown: self.movDown,
+            movLeft: self.movLeft,
+            movRight: self.movRight,
             dir: self.dir,
-            spdx: self.spdx,
-            spdy: self.spdy,
+            spd: self.spd,
+            width: self.width,
+            height: self.height,
             frame: self.frame,
             map: self.map,
             mapOverlay: self.mapOverlay,
@@ -73,8 +93,7 @@ var Player = function (id) {
             x: self.x,
             y: self.y,
             dir: self.dir,
-            spdx: self.spdx,
-            spdy: self.spdy
+            spd: self.spd,
         };
     }
 
@@ -87,34 +106,16 @@ Player.onConnect = function (socket) {
     var player = Player(socket.id);
     socket.on('keypress', function (data) {
         if (data.inputId === 'up') {
-            player.dirUp = data.state;
-            if (data.state)
-                player.spdy = 2;
-            else
-                player.spdy = 0;
+            player.movUp = data.state;
         }
         if (data.inputId === 'down') {
-            player.dirDown = data.state;
-            if (data.state)
-                player.spdy = 2;
-            else
-                player.spdy = 0;
+            player.movDown = data.state;
         }
         if (data.inputId === 'left') {
-            player.dirLeft = data.state;
-            player.dir = data.inputId;
-            if (data.state)
-                player.spdx = 2;
-            else
-                player.spdx = 0;
+            player.movLeft = data.state;
         }
         if (data.inputId === 'right') {
-            player.dirRight = data.state;
-            player.dir = data.inputId;
-            if (data.state)
-                player.spdx = 2;
-            else
-                player.spdx = 0;
+            player.movRight = data.state;
         }
     });
 
@@ -172,28 +173,21 @@ io.sockets.on('connection', function (socket) {
 });
 
 var map = [
-    [0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-    [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-    [0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
-    [0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0],
-    [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
-    [0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+    [0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0],
+    [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1],
+    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0],
+    [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+
 ];
 
 var mapOverlay = [
     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 6, 0, 3, 7, 0, 0, 0],
     [0, 0, 0, 0, 1, 0, 0, 0, 0, 7, 6, 0, 0, 0, 0, 0, 1, 0, 0],
-    [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 6],
+    [0, 0, 1, 7, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 6],
     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 5, 0, 0, 2, 0, 0, 0],
     [1, 0, 0, 5, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
     [0, 0, 3, 0, 0, 0, 4, 1, 4, 2, 0, 0, 3, 0, 0, 0, 0, 0, 0],

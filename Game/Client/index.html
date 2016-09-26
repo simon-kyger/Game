@@ -97,13 +97,13 @@
                     id: init.id,
                     x: init.x,
                     y: init.y,
-                    dirUp: init.dirUp,
-                    dirDown: init.dirDown,
-                    dirLeft: init.dirLeft,
-                    dirRight: init.dirRight,
+                    movUp: init.movUp,
+                    movDown: init.movDown,
+                    movLeft: init.movLeft,
+                    movRight: init.movRight,
                     dir: init.dir,
-                    spdx: init.spdx,
-                    spdy: init.spdy,
+                    vel: init.vel,
+                    spd: init.spd,
                     frame: init.frame,
                     map: init.map,
                     mapOverlay: init.mapOverlay,
@@ -116,9 +116,9 @@
                     var map = Player.list[selfId].map;
                     var mw = map[0].length;
                     var mh = map.length;
-                    var x = self.x - Player.list[selfId].x + 140; //MAGIC NUMBERS
-                    var y = self.y - Player.list[selfId].y + 60; //ANOTHER MAGIC NUMBER
-                    if (self.spdy == 0 && self.spdx == 0) {
+                    var x = self.x - Player.list[selfId].x
+                    var y = self.y - Player.list[selfId].y
+                    if (self.spd == 0) {
                         if (self.dir == 'right'){
                             ctx.drawImage(sprite.player, 0, 0, 16, 16, x, y, 16, 16);
                         }
@@ -146,88 +146,89 @@
             //identification
             Player.list = {};
 
-            //updates
-            socket.on('init', function (data) {
-                if (data.selfId !== undefined)
-                    selfId = data.selfId;
-                for (var i = 0; i < data.player.length; i++) {
-                    new Player(data.player[i]);
-                }
-            });
-            socket.on('update', function (data) {
-                for (var i = 0; i < data.player.length; i++) {
-                    var pack = data.player[i];
-                    var p = Player.list[pack.id];
-                    if (p) {
-                        if (p.x !== undefined)
-                            p.x = pack.x;
-                        if (p.y !== undefined)
-                            p.y = pack.y;
-                        if (p.dir !== undefined)
-                            p.dir = pack.dir;
-                        if (p.spdy !== undefined)
-                            p.spdy = pack.spdy;
-                        if (p.spdx !== undefined)
-                            p.spdx = pack.spdx;
+            function update() {
+                //recieved
+                socket.on('init', function (data) {
+                    if (data.selfId !== undefined)
+                        selfId = data.selfId;
+                    for (var i = 0; i < data.player.length; i++) {
+                        new Player(data.player[i]);
+                    }
+                });
+                socket.on('update', function (data) {
+                    for (var i = 0; i < data.player.length; i++) {
+                        var pack = data.player[i];
+                        var p = Player.list[pack.id];
+                        if (p) {
+                            if (p.x !== undefined)
+                                p.x = pack.x;
+                            if (p.y !== undefined)
+                                p.y = pack.y;
+                            if (p.dir !== undefined)
+                                p.dir = pack.dir;
+                            if (p.spd !== undefined)
+                                p.spd = pack.spd;
+                        }
+                    }
+                });
+                socket.on('remove', function (data) {
+                    for (var i = 0; i < data.player.length; i++)
+                        delete Player.list[data.player[i]];
+                });
+                if (selfId == null)
+                    return;
+                //sends
+                document.onkeydown = function (event) {
+                    if (event.keyCode === 87) {
+                        socket.emit('keypress', {
+                            inputId: 'up',
+                            state: true
+                        });
+                    }
+                    else if (event.keyCode === 83) {
+                        socket.emit('keypress', {
+                            inputId: 'down',
+                            state: true
+                        });
+                    }
+                    else if (event.keyCode === 65) {
+                        socket.emit('keypress', {
+                            inputId: 'left',
+                            state: true
+                        });
+                    }
+                    else if (event.keyCode === 68) {
+                        socket.emit('keypress', {
+                            inputId: 'right',
+                            state: true
+                        });
                     }
                 }
-            });
-            socket.on('remove', function (data) {
-                for (var i = 0; i < data.player.length; i++)
-                    delete Player.list[data.player[i]];
-            });
-
-            //game movement
-            document.onkeydown = function (event) {
-                if (event.keyCode === 87) {
-                    socket.emit('keypress', {
-                        inputId: 'up',
-                        state: true
-                    });
-                }
-                else if (event.keyCode === 83) {
-                    socket.emit('keypress', {
-                        inputId: 'down',
-                        state: true
-                    });
-                }
-                else if (event.keyCode === 65) {
-                    socket.emit('keypress', {
-                        inputId: 'left',
-                        state: true
-                    });
-                }
-                else if (event.keyCode === 68) {
-                    socket.emit('keypress', {
-                        inputId: 'right',
-                        state: true
-                    });
-                }
-            }
-            document.onkeyup = function (event) {
-                if (event.keyCode === 87) {
-                    socket.emit('keypress', {
-                        inputId: 'up',
-                        state: false,
-                    });
-                }
-                else if (event.keyCode === 83) {
+                document.onkeyup = function (event) {
+                    if (event.keyCode === 87) {
+                        socket.emit('keypress', {
+                            inputId: 'up',
+                            state: false,
+                        });
+                    }
+                    else if (event.keyCode === 83) {
                         socket.emit('keypress', {
                             inputId: 'down',
                             state: false,
                         });
-                }
-                else if (event.keyCode === 65) {
+                    }
+                    else if (event.keyCode === 65) {
                         socket.emit('keypress', {
                             inputId: 'left',
                             state: false,
                         });
-                }
-                else if (event.keyCode === 68) {
-                    socket.emit('keypress', {
-                        inputId: 'right',
-                        state: false,
-                    });
+                    }
+                    else if (event.keyCode === 68) {
+                        socket.emit('keypress', {
+                            inputId: 'right',
+                            state: false,
+                        });
+                    }
                 }
             }
 
@@ -241,14 +242,13 @@
                 var maparrh = p.map.length;
                 for (var j = 0; j < maparrh; j++){
                     for (var k = 0; k < maparrw; k++) {
-                        if(map[j][k] == 0)
+                        //if(map[j][k] == 0)
                             ctx.drawImage(sprite.grass1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT - p.y, TILEWIDTH, TILEHEIGHT);
-                        if(map[j][k] == 1)
-                            ctx.drawImage(sprite.grass1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT - p.y, TILEWIDTH, TILEHEIGHT);
+                        //if(map[j][k] == 1)
+                        //    ctx.drawImage(sprite.grass1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT - p.y, TILEWIDTH, TILEHEIGHT);
                     }
                 }
             }
-
             function drawMapOverlay() {
                 var p = Player.list[selfId];
                 var mv = p.mapOverlay;
@@ -265,15 +265,14 @@
                         if (mv[j][k] == 4)
                             ctx.drawImage(sprite.stump, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
                         if (mv[j][k] == 5)
-                            ctx.drawImage(sprite.tree1, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
+                            ctx.drawImage(sprite.tree1, 0, 0, TILEWIDTH*2, TILEHEIGHT*2, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, TILEWIDTH*2, TILEHEIGHT*2);
                         if (mv[j][k] == 6)
-                            ctx.drawImage(sprite.tree2, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
+                            ctx.drawImage(sprite.tree2, 0, 0, TILEWIDTH*2, TILEHEIGHT*4, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, TILEWIDTH*2, TILEHEIGHT*4);
                         if (mv[j][k] == 7)
-                            ctx.drawImage(sprite.tree3, 0, 0, TILEWIDTH, TILEHEIGHT, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, 16, 16);
+                            ctx.drawImage(sprite.tree3, 0, 0, TILEWIDTH*2, TILEHEIGHT*4, k * TILEWIDTH - p.x, j * TILEHEIGHT / 2 - p.y, TILEWIDTH*2, TILEHEIGHT*2);
                     }
                 }
             }
-
             function drawPlayers() {
                 for (var i in Player.list) {
                     Player.list[i].draw();
@@ -307,17 +306,20 @@
                     return;
                 ctx.clearRect(0, 0, ctx.width, ctx.height);
                 drawMap();
-                drawMapOverlay();
+                //drawMapOverlay();
                 drawPlayers();
-                drawLighting();
+                //drawLighting();
             }
+
             var selfId;
              //game loop
 
             function init() {
                 var previoustime = Date.now();
                 var frames = 0;
+                update();
                 function main(time) {
+                    update();
                     render();
                     frames++;
                     while (Date.now() - previoustime > 1000) {
