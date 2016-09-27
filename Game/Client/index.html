@@ -3,14 +3,15 @@
     <head>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+        <script src="client/js/rafp.js"></script>
         <link href="client/main.css" rel="stylesheet"</link>
         <link rel="shortcut icon" href="favicon.ico" type='image/x-icon'/ >
     </head>
     <body>
         <div id="game">
             <!--GAMEBOARD-->
-            <canvas id="ctx" width="1920" height="1080"></canvas>
-            <canvas id="ctx2"></canvas>
+            <canvas id="ctx" width="240" height="134"></canvas>
+            <canvas id="ctx2" width="240" height="134"></canvas>
             <!--CHATUI-->
             <div id="chat" class="chat">
                 <div id="messages" class="messages">
@@ -67,8 +68,8 @@
 
             //GAME
             //width of height of dev env
-            var WIDTH = 1920;
-            var HEIGHT = 1080;
+            var WIDTH = 240;
+            var HEIGHT = 134;
             //width and height of tiles
             var TW = 16;
             var TH = 16;
@@ -119,9 +120,9 @@
                     pclass: init.pclass,
                 }
                 self.draw = function () {
-                    var x = self.x - Player.list[selfId].x + WIDTH / 2;
-                    var y = self.y - Player.list[selfId].y + HEIGHT / 2;
-                    var s = 8; //scale
+                    var x = self.x - Player.list[selfId].x + WIDTH / 2 - 6; // 6 is centering his width
+                    var y = self.y - Player.list[selfId].y + HEIGHT / 2 - 8; // 8 is centering his height
+                    var s = 1; //scale
                     if (self.spd == 0) {
                         if (self.dir == 'right'){
                             ctx.drawImage(sprite.player, 0, 0, 16, 16, x, y, TW * s, TH * s);
@@ -238,14 +239,14 @@
             function drawMap() {
                 ctx.save();
                 var p = Player.list[selfId];
-                var s = 8; //scale
+                var s = 1; //scale
                 var jitter;
                 for (var j = 0; j < p.map.length; j++){
                     for (var k = 0; k < p.map[0].length; k++) {
                         if (p.map[j][k] == 0)
-                            ctx.drawImage(sprite.grass1, 0, 0, TW, TH, (k * TW * s - p.x)+(WIDTH/2), (j * s * TH - p.y)+(HEIGHT/2), TW*s, TH*s);
+                            ctx.drawImage(sprite.grass1, (k * TW * s - p.x)+(WIDTH/2), (j * s * TH - p.y)+(HEIGHT/2));
                         if (p.map[j][k] == 1)
-                            ctx.drawImage(sprite.grass2, 0, 0, TW, TH, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s, TH * s);
+                            ctx.drawImage(sprite.grass2, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
                     }
                 }
                 ctx.restore();
@@ -256,19 +257,19 @@
                 for (var j = 0; j < p.mapOverlay.length; j++) {
                     for (var k = 0; k < p.mapOverlay[0].length; k++) {
                         if (p.mapOverlay[j][k] == 1)
-                            ctx.drawImage(sprite.shrub1, 0, 0, TW, TH, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s, TH * s);
+                            ctx.drawImage(sprite.shrub1,(k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
                         if (p.mapOverlay[j][k] == 2)
-                            ctx.drawImage(sprite.shrub2, 0, 0, TW, TH, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s, TH * s);
+                            ctx.drawImage(sprite.shrub2, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
                         if (p.mapOverlay[j][k] == 3)
-                            ctx.drawImage(sprite.rock1, 0, 0, TW, TH, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s, TH * s);
+                            ctx.drawImage(sprite.rock1, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
                         if (p.mapOverlay[j][k] == 4)
-                            ctx.drawImage(sprite.stump, 0, 0, TW, TH, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s, TH * s);
+                            ctx.drawImage(sprite.stump, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
                         if (p.mapOverlay[j][k] == 5)
-                            ctx.drawImage(sprite.tree1, 0, 0, TW * 2, TH * 2, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s * 2, TH * s * 2);
+                            ctx.drawImage(sprite.tree1, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
                         if (p.mapOverlay[j][k] == 6)
-                            ctx.drawImage(sprite.tree2, 0, 0, TW * 2, TH * 4, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s * 2, TH * s * 4);
+                            ctx.drawImage(sprite.tree2, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
                         if (p.mapOverlay[j][k] == 7)
-                            ctx.drawImage(sprite.tree3, 0, 0, TW * 2, TH * 4, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2), TW * s * 2, TH * s * 2);
+                            ctx.drawImage(sprite.tree3, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
                     }
                 }
             }
@@ -280,8 +281,8 @@
             function drawLighting() {
                 var shadowCanvas = document.getElementById("ctx2");
                 var shadowCtx = shadowCanvas.getContext('2d');
-                shadowCanvas.width = ctx.width;
-                shadowCanvas.height = ctx.height;
+                shadowCanvas.width = WIDTH;
+                shadowCanvas.height = HEIGHT;
 
                 // Make it black
                 shadowCtx.fillStyle = '#000';
@@ -293,11 +294,15 @@
                 // Light Source on player
                 var x = WIDTH/2;
                 var y = HEIGHT/2;
-                gradient = shadowCtx.createRadialGradient(x, y, 1000, x, y, 100);
+
+                x = x | 0;
+                y = y | 0;
+
+                gradient = shadowCtx.createRadialGradient(x, y, 128, x, y, 5);
                 gradient.addColorStop(0, "rgba(255, 255, 255, .1)");
                 gradient.addColorStop(1, "rgba(255, 255, 255, 1.0)");
                 shadowCtx.fillStyle = gradient;
-                shadowCtx.fillRect(0, 0, ctx.width, ctx.height);
+                shadowCtx.fillRect(0, 0, WIDTH, HEIGHT);
             }
 
             function render() {

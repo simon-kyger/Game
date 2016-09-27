@@ -15,19 +15,18 @@ server.listen(port);
 
 const TILEWIDTH = 16;
 const TILEHEIGHT = 16;
-const SCALE = 8;
 //player Class
 var Player = function (id) {
     var self = {
-        x: 960,
-        y: 544,
+        x: 120,
+        y: 68,
         id: id,
         movUp: false,
         movDown: false,
         movLeft: false,
         movRight: false,
         dir: 'left',
-        vel: 16,
+        vel: 2,
         spd: 0,
         frame: 0,
         width: TILEWIDTH,
@@ -64,10 +63,10 @@ var Player = function (id) {
             self.x = 0;
         if (self.y < 0)
             self.y = 0;
-        if (self.x > ((map[0].length - 1) * TILEWIDTH * SCALE))
-            self.x = (map[0].length - 1) * TILEWIDTH * SCALE;
-        if (self.y > ((map.length - 1) * TILEWIDTH * SCALE))
-            self.y = (map.length - 1) * TILEWIDTH * SCALE;
+        if (self.x > map[0].length * TILEWIDTH)
+            self.x = map[0].length * TILEWIDTH;
+        if (self.y > map.length * TILEHEIGHT)
+            self.y = map.length * TILEHEIGHT;
     }  
     self.getInitPack = function() {
         return {
