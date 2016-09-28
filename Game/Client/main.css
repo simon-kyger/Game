@@ -9,6 +9,9 @@ canvas {
     width:100%;
     height:100%;
 }
+#ctx2 {
+    pointer-events:none;
+}
 
 .chat{
     font-family:Helvetica, Arial, sans-serif;
@@ -44,10 +47,11 @@ canvas {
   height: 15%
 }
 
-#fps {
+#debug {
    position: absolute;
    font-family: 'Lucida Console';
    font-size: 18px;
-   font-weight: bold;
    color: red;
+   border: 2px solid black;
+   background-color: rgba(0, 0, 0, .5);
 }

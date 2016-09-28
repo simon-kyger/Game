@@ -3,15 +3,15 @@
     <head>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
-        <script src="client/js/rafp.js"></script>
+        <script src="client/js/requestanimationframe.js"></script>
         <link href="client/main.css" rel="stylesheet"</link>
         <link rel="shortcut icon" href="favicon.ico" type='image/x-icon'/ >
     </head>
     <body>
         <div id="game">
             <!--GAMEBOARD-->
-            <canvas id="ctx" width="240" height="134"></canvas>
-            <canvas id="ctx2" width="240" height="134"></canvas>
+            <canvas id="ctx" width="256" height="144"></canvas>
+            <canvas id="ctx2" width="256" height="144"></canvas>
             <!--CHATUI-->
             <div id="chat" class="chat">
                 <div id="messages" class="messages">
@@ -19,7 +19,12 @@
                 </div>
                 <input id="chatinput" class="chatinput"></input>
             </div>
-            <div id="fps"></div>
+            <div id="debug">
+                <div id="fps">FPS:</div>
+                <div id="mouse">MOUSEPOS:</div>
+                <div id="playerX">PLAYERX:</div>
+                <div id="playerY">PLAYERY:</div>
+            </div>
             <!--ADDITIONALUI-->
         </div>
         <script>
@@ -68,15 +73,14 @@
 
             //GAME
             //width of height of dev env
-            var WIDTH = 240;
-            var HEIGHT = 134;
+            var WIDTH = 256;
+            var HEIGHT = 144;
             //width and height of tiles
             var TW = 16;
             var TH = 16;
             var ctx = document.getElementById("ctx").getContext("2d");
             ctx.width = window.innerWidth;
             ctx.height = window.innerHeight;
-
             ctx.imageSmoothingEnabled = false;
             var sprite = {};
             sprite.player = new Image();
@@ -118,10 +122,12 @@
                     mapx: null,
                     mapy: null,
                     pclass: init.pclass,
+                    isSelected: false,
+                    realm: null,
                 }
                 self.draw = function () {
-                    var x = self.x - Player.list[selfId].x + WIDTH / 2 - 6; // 6 is centering his width
-                    var y = self.y - Player.list[selfId].y + HEIGHT / 2 - 8; // 8 is centering his height
+                    var x = self.x - Player.list[selfId].x + WIDTH /2;
+                    var y = self.y - Player.list[selfId].y + HEIGHT/2; 
                     var s = 1; //scale
                     if (self.spd == 0) {
                         if (self.dir == 'right'){
@@ -143,6 +149,11 @@
                         }
 
                         self.frame+= .1;
+                    }
+                    if (self.isSelected) {
+                        ctx.strokeStyle = 'rgba(255,0,0,1)';
+                        ctx.lineWidth = 0.5;
+                        ctx.strokeRect(x, y, TW * s, TH * s);
                     }
                 }
                 Player.list[self.id] = self;
@@ -234,22 +245,31 @@
                 }
             }
 
+            function getPosition(event) {
+                var x = event.x;
+                var y = event.y;
+
+                var canvas = document.getElementById("ctx");
+
+                x -= canvas.offsetLeft;
+                y -= canvas.offsetTop;
+
+                alert("x:" + x + " y:" + y);
+            }
 
             //rendering
             function drawMap() {
-                ctx.save();
                 var p = Player.list[selfId];
-                var s = 1; //scale
-                var jitter;
                 for (var j = 0; j < p.map.length; j++){
                     for (var k = 0; k < p.map[0].length; k++) {
+                        var x = (k * TW - p.x) + (WIDTH / 2);
+                        var y = (j * TH - p.y) + (HEIGHT / 2);
                         if (p.map[j][k] == 0)
-                            ctx.drawImage(sprite.grass1, (k * TW * s - p.x)+(WIDTH/2), (j * s * TH - p.y)+(HEIGHT/2));
+                            ctx.drawImage(sprite.grass1, x, y);
                         if (p.map[j][k] == 1)
-                            ctx.drawImage(sprite.grass2, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
+                            ctx.drawImage(sprite.grass2, x, y);
                     }
                 }
-                ctx.restore();
             }
             function drawMapOverlay() {
                 var p = Player.list[selfId];
@@ -279,6 +299,7 @@
                 }
             }
             function drawLighting() {
+                //overarching lighting
                 var shadowCanvas = document.getElementById("ctx2");
                 var shadowCtx = shadowCanvas.getContext('2d');
                 shadowCanvas.width = WIDTH;
@@ -286,7 +307,7 @@
 
                 // Make it black
                 shadowCtx.fillStyle = '#000';
-                shadowCtx.fillRect(0, 0, ctx.width, ctx.height);
+                shadowCtx.fillRect(0, 0, shadowCanvas.width, shadowCanvas.height);
 
                 // Turn canvas into mask
                 shadowCtx.globalCompositeOperation = "destination-out";
@@ -298,43 +319,97 @@
                 x = x | 0;
                 y = y | 0;
 
-                gradient = shadowCtx.createRadialGradient(x, y, 128, x, y, 5);
-                gradient.addColorStop(0, "rgba(255, 255, 255, .1)");
-                gradient.addColorStop(1, "rgba(255, 255, 255, 1.0)");
+                gradient = shadowCtx.createRadialGradient(x, y, 128, x, y, 1);
+                gradient.addColorStop(0, "rgba(255, 255, 0, .1)");
+                gradient.addColorStop(1, "rgba(255, 255, 0, 1.0)");
                 shadowCtx.fillStyle = gradient;
                 shadowCtx.fillRect(0, 0, WIDTH, HEIGHT);
+            }
+            function drawForeground() {
+
             }
 
             function render() {
                 if (selfId == null)
                     return;
+                //debug
+                $('#playerX').html('PLAYERX: ' + Player.list[selfId].x);
+                $('#playerY').html('PLAYERY: ' + Player.list[selfId].y);
                 ctx.clearRect(0, 0, WIDTH, HEIGHT);
                 drawMap();
                 drawMapOverlay();
                 drawPlayers();
+                //drawForeground(); 
                 drawLighting();
             }
 
             var selfId;
              //game loop
 
+            function getMousePos(canvas, evt) {
+                var rect = canvas.getBoundingClientRect();
+                return {
+                    x: evt.clientX - rect.left,
+                    y: evt.clientY - rect.top
+                };
+            }
+
+            function getDistance(entity1, entity2) {
+                var x = entity1.x - entity2.x;
+                var y = entity1.y - entity2.y;
+                return Math.sqrt(Math.pow(x, 2)+Math.pow(y,2));
+            }
+            function isColliding(entity1, entity2) {
+                var distance = getDistance(entity1, entity2);
+                if (distance < 10)
+                    return true;
+                else
+                    return false;
+            }
+            
+            function update() {
+                if (selfId == null)
+                    return;
+                if (Date.now() < spamtimer + 1000)
+                    return;
+                //player collisions
+                for (var e in Player.list) {
+                    if (e == selfId)
+                        continue;
+                    if (isColliding(Player.list[selfId], Player.list[e])) {
+                        socket.emit('chatMsg', Player.list[selfId].id + ' is colliding with ' + Player.list[e].id);       
+                    }
+                }
+            }
+
             function init() {
+                var ctx = document.getElementById('ctx').getContext('2d');
+                ctx.canvas.addEventListener('mousemove', function (event) {
+                    var mouseX = event.clientX - ctx.canvas.offsetLeft;
+                    var mouseY = event.clientY - ctx.canvas.offsetTop;
+                    var status = document.getElementById('mouse');
+                    $('#mouse').html('MOUSEPOS: ' + mouseX + ', ' + mouseY);
+                });
+                ctx.canvas.addEventListener('click', function (event) {
+
+                });
                 var previoustime = Date.now();
-                var frames = 0;
-                render();
+                var frames = 0;          
                 function main(time) {
-                    render();
+                    requestAnimationFrame(main);
                     frames++;
                     while (Date.now() - previoustime > 1000) {
+                        
                         $('#fps').html('FPS:' + frames);
                         previoustime += 1000;
                         frames = 0;
                     }
-                    requestAnimationFrame(main);
+                    update();
+                    render();
                 }
-                requestAnimationFrame(main);
+                main();
             }
-            window.onload = init;
+            init();
 
 
         </script>

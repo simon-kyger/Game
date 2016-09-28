@@ -13,13 +13,13 @@ app.use('/client', express.static(__dirname + '/client'));
 //on
 server.listen(port);
 
-const TILEWIDTH = 16;
-const TILEHEIGHT = 16;
+const TW = 16;
+const TH = 16;
 //player Class
 var Player = function (id) {
     var self = {
-        x: 120,
-        y: 68,
+        x: 0,
+        y: 0,
         id: id,
         movUp: false,
         movDown: false,
@@ -29,8 +29,8 @@ var Player = function (id) {
         vel: 2,
         spd: 0,
         frame: 0,
-        width: TILEWIDTH,
-        height: TILEHEIGHT,
+        width: TW,
+        height: TH,
         map: map,
         mapOverlay: mapOverlay,
         pclass: 'warrior',
@@ -63,10 +63,10 @@ var Player = function (id) {
             self.x = 0;
         if (self.y < 0)
             self.y = 0;
-        if (self.x > map[0].length * TILEWIDTH)
-            self.x = map[0].length * TILEWIDTH;
-        if (self.y > map.length * TILEHEIGHT)
-            self.y = map.length * TILEHEIGHT;
+        if (self.x > map[0].length * TW -TW/2)
+            self.x = map[0].length * TW -TW/2;
+        if (self.y > map.length * TH -TH)
+            self.y = map.length * TH -TH;
     }  
     self.getInitPack = function() {
         return {
@@ -184,6 +184,12 @@ var map = [
     [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
     [0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
     [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+    [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+    [0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1],
+    [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+    [0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
 
 ];
 
