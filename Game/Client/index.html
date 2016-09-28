@@ -332,9 +332,6 @@
             function render() {
                 if (selfId == null)
                     return;
-                //debug
-                $('#playerX').html('PLAYERX: ' + Player.list[selfId].x);
-                $('#playerY').html('PLAYERY: ' + Player.list[selfId].y);
                 ctx.clearRect(0, 0, WIDTH, HEIGHT);
                 drawMap();
                 drawMapOverlay();
@@ -370,8 +367,10 @@
             function update() {
                 if (selfId == null)
                     return;
-                if (Date.now() < spamtimer + 1000)
-                    return;
+                //update debug
+                $('#playerX').html('PLAYERX: ' + Player.list[selfId].x);
+                $('#playerY').html('PLAYERY: ' + Player.list[selfId].y);
+
                 //player collisions
                 for (var e in Player.list) {
                     if (e == selfId)
@@ -383,6 +382,7 @@
             }
 
             function init() {
+                //event debug handlers
                 var ctx = document.getElementById('ctx').getContext('2d');
                 ctx.canvas.addEventListener('mousemove', function (event) {
                     var mouseX = event.clientX - ctx.canvas.offsetLeft;
@@ -391,15 +391,14 @@
                     $('#mouse').html('MOUSEPOS: ' + mouseX + ', ' + mouseY);
                 });
                 ctx.canvas.addEventListener('click', function (event) {
-
                 });
                 var previoustime = Date.now();
-                var frames = 0;          
+                var frames = 0;
+                //MAIN LOOP
                 function main(time) {
                     requestAnimationFrame(main);
                     frames++;
-                    while (Date.now() - previoustime > 1000) {
-                        
+                    while (Date.now() - previoustime > 1000) {                  
                         $('#fps').html('FPS:' + frames);
                         previoustime += 1000;
                         frames = 0;
