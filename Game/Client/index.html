@@ -76,11 +76,9 @@
             var WIDTH = 256;
             var HEIGHT = 144;
             //width and height of tiles
-            var TW = 16;
-            var TH = 16;
+            var TW = 128;
+            var TH = 128;
             var ctx = document.getElementById("ctx").getContext("2d");
-            ctx.width = window.innerWidth;
-            ctx.height = window.innerHeight;
             ctx.imageSmoothingEnabled = false;
             var sprite = {};
             sprite.player = new Image();
@@ -126,26 +124,25 @@
                     realm: null,
                 }
                 self.draw = function () {
-                    var x = self.x - Player.list[selfId].x + WIDTH /2;
+                    var x = self.x - Player.list[selfId].x + WIDTH/2;
                     var y = self.y - Player.list[selfId].y + HEIGHT/2; 
-                    var s = 1; //scale
                     if (self.spd == 0) {
                         if (self.dir == 'right'){
-                            ctx.drawImage(sprite.player, 0, 0, 16, 16, x, y, TW * s, TH * s);
+                            ctx.drawImage(sprite.player, 0, 0, TW, TH, x, y, TW, TH);
                         }
                         if (self.dir == 'left'){
-                            ctx.drawImage(sprite.player, 64, 0, 16, 16, x, y, TW * s, TH * s);
+                            ctx.drawImage(sprite.player, 512, 0, TW, TH, x, y, TW, TH);
                         }
                     }
                     else {
                         var sourceoffset = Math.floor(self.frame) % 4;
                         if (self.dir == 'right') {
-                            sourceoffset = sourceoffset * 16;
-                            ctx.drawImage(sprite.player, sourceoffset, 0, 16, 16, x, y, TW * s, TH * s);
+                            sourceoffset = sourceoffset * TW;
+                            ctx.drawImage(sprite.player, sourceoffset, 0, TW, TH, x, y, TW, TH);
                         }
                         if (self.dir == 'left') {
-                            sourceoffset = sourceoffset * 16 + 64;
-                            ctx.drawImage(sprite.player, sourceoffset, 0, 16, 16, x, y, TW * s, TH * s);
+                            sourceoffset = sourceoffset * TW + TW*4;
+                            ctx.drawImage(sprite.player, sourceoffset, 0, TW, TH, x, y, TW, TH);
                         }
 
                         self.frame+= .1;
@@ -273,23 +270,24 @@
             }
             function drawMapOverlay() {
                 var p = Player.list[selfId];
-                var s = 1; //scale
                 for (var j = 0; j < p.mapOverlay.length; j++) {
                     for (var k = 0; k < p.mapOverlay[0].length; k++) {
+                        var x = (k * TW - p.x) + (WIDTH / 2);
+                        var y = (j * TH - p.y) + (HEIGHT / 2);
                         if (p.mapOverlay[j][k] == 1)
-                            ctx.drawImage(sprite.shrub1,(k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
+                            ctx.drawImage(sprite.shrub1,x, y);
                         if (p.mapOverlay[j][k] == 2)
-                            ctx.drawImage(sprite.shrub2, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
+                            ctx.drawImage(sprite.shrub2, x,y);
                         if (p.mapOverlay[j][k] == 3)
-                            ctx.drawImage(sprite.rock1, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
+                            ctx.drawImage(sprite.rock1, x,y);
                         if (p.mapOverlay[j][k] == 4)
-                            ctx.drawImage(sprite.stump, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
+                            ctx.drawImage(sprite.stump, x,y);
                         if (p.mapOverlay[j][k] == 5)
-                            ctx.drawImage(sprite.tree1, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
+                            ctx.drawImage(sprite.tree1, x,y);
                         if (p.mapOverlay[j][k] == 6)
-                            ctx.drawImage(sprite.tree2, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
+                            ctx.drawImage(sprite.tree2, x,y);
                         if (p.mapOverlay[j][k] == 7)
-                            ctx.drawImage(sprite.tree3, (k * TW * s - p.x) + (WIDTH / 2), (j * s * TH - p.y) + (HEIGHT / 2));
+                            ctx.drawImage(sprite.tree3, x,y);
                     }
                 }
             }
@@ -325,19 +323,31 @@
                 shadowCtx.fillStyle = gradient;
                 shadowCtx.fillRect(0, 0, WIDTH, HEIGHT);
             }
+
             function drawForeground() {
 
+            }
+
+            function prerender() {
+                drawLighting();
             }
 
             function render() {
                 if (selfId == null)
                     return;
+                ctx.canvas.width = WIDTH = innerWidth;
+                ctx.canvas.height = HEIGHT = innerHeight;
                 ctx.clearRect(0, 0, WIDTH, HEIGHT);
                 drawMap();
                 drawMapOverlay();
                 drawPlayers();
+                drawCursor();
                 //drawForeground(); 
-                drawLighting();
+
+
+                //prerendered stuff goes here:
+                var shadowCanvas = document.getElementById("ctx2");
+                ctx.drawImage(shadowCanvas, WIDTH, HEIGHT);
             }
 
             var selfId;
@@ -379,21 +389,36 @@
                         socket.emit('chatMsg', Player.list[selfId].id + ' is colliding with ' + Player.list[e].id);       
                     }
                 }
+                //cursor collision
+            }
+
+            var mouseX, mouseY;
+            var ctx = document.getElementById('ctx').getContext('2d');
+            ctx.canvas.addEventListener('mousemove', setMousePosition, false);
+            function setMousePosition(e) {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                //$('#mouse').html('MOUSEPOS: ' + mouseX + ', ' + mouseY);
+            }
+            function drawCursor() {
+                ctx.fillStyle = "#FF6A6A";
+                ctx.fillRect(mouseX, mouseY, TW/2, TH/2);
             }
 
             function init() {
+                //prerendering
+                prerender();
                 //event debug handlers
-                var ctx = document.getElementById('ctx').getContext('2d');
-                ctx.canvas.addEventListener('mousemove', function (event) {
-                    var mouseX = event.clientX - ctx.canvas.offsetLeft;
-                    var mouseY = event.clientY - ctx.canvas.offsetTop;
-                    var status = document.getElementById('mouse');
-                    $('#mouse').html('MOUSEPOS: ' + mouseX + ', ' + mouseY);
-                });
                 ctx.canvas.addEventListener('click', function (event) {
+                    var p = Player.list[selfId];
+                    var mouseX, mouseY;
+                    
+                    var status = document.getElementById('mouse');
+                    //$('#mouse').html('MOUSEPOS: ' + mouseX + ', ' + mouseY);
                 });
                 var previoustime = Date.now();
                 var frames = 0;
+                //prerender();
                 //MAIN LOOP
                 function main(time) {
                     requestAnimationFrame(main);
@@ -403,7 +428,7 @@
                         previoustime += 1000;
                         frames = 0;
                     }
-                    update();
+                    //update();
                     render();
                 }
                 main();
