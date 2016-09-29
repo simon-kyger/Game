@@ -22,8 +22,8 @@
             <div id="debug">
                 <div id="fps">FPS:</div>
                 <div id="mouse">MOUSEPOS:</div>
-                <div id="playerX">PLAYERX:</div>
-                <div id="playerY">PLAYERY:</div>
+                <div id="playerPOS">PLAYERPOS:</div>
+                <div id="DCXDCY">DCX/DCY:</div>
             </div>
             <!--ADDITIONALUI-->
         </div>
@@ -122,27 +122,29 @@
                     pclass: init.pclass,
                     isSelected: false,
                     realm: null,
+                    dx: null,
+                    dy: null,
                 }
                 self.draw = function () {
-                    var x = self.x - Player.list[selfId].x + WIDTH/2;
-                    var y = self.y - Player.list[selfId].y + HEIGHT/2; 
+                    self.dx = self.x - Player.list[selfId].x + WIDTH/2;
+                    self.dy = self.y - Player.list[selfId].y + HEIGHT/2; 
                     if (self.spd == 0) {
                         if (self.dir == 'right'){
-                            ctx.drawImage(sprite.player, 0, 0, TW, TH, x, y, TW, TH);
+                            ctx.drawImage(sprite.player, 0, 0, TW, TH, self.dx, self.dy, TW, TH);
                         }
                         if (self.dir == 'left'){
-                            ctx.drawImage(sprite.player, 512, 0, TW, TH, x, y, TW, TH);
+                            ctx.drawImage(sprite.player, 512, 0, TW, TH, self.dx, self.dy, TW, TH);
                         }
                     }
                     else {
                         var sourceoffset = Math.floor(self.frame) % 4;
                         if (self.dir == 'right') {
                             sourceoffset = sourceoffset * TW;
-                            ctx.drawImage(sprite.player, sourceoffset, 0, TW, TH, x, y, TW, TH);
+                            ctx.drawImage(sprite.player, sourceoffset, 0, TW, TH, self.dx, self.dy, TW, TH);
                         }
                         if (self.dir == 'left') {
                             sourceoffset = sourceoffset * TW + TW*4;
-                            ctx.drawImage(sprite.player, sourceoffset, 0, TW, TH, x, y, TW, TH);
+                            ctx.drawImage(sprite.player, sourceoffset, 0, TW, TH, self.dx, self.dy, TW, TH);
                         }
 
                         self.frame+= .1;
@@ -159,7 +161,7 @@
             //identification
             Player.list = {};
 
-            //recieved
+//SERVER
             socket.on('init', function (data) {
                 if (data.selfId !== undefined)
                     selfId = data.selfId;
@@ -188,73 +190,6 @@
                     delete Player.list[data.player[i]];
             });
 
-            //sends
-            document.onkeydown = function (event) {
-                if (event.keyCode === 87) {
-                    socket.emit('keypress', {
-                        inputId: 'up',
-                        state: true
-                    });
-                }
-                else if (event.keyCode === 83) {
-                    socket.emit('keypress', {
-                        inputId: 'down',
-                        state: true
-                    });
-                }
-                else if (event.keyCode === 65) {
-                    socket.emit('keypress', {
-                        inputId: 'left',
-                        state: true
-                    });
-                }
-                else if (event.keyCode === 68) {
-                    socket.emit('keypress', {
-                        inputId: 'right',
-                        state: true
-                    });
-                }
-            }
-            document.onkeyup = function (event) {
-                if (event.keyCode === 87) {
-                    socket.emit('keypress', {
-                        inputId: 'up',
-                        state: false,
-                    });
-                }
-                else if (event.keyCode === 83) {
-                    socket.emit('keypress', {
-                        inputId: 'down',
-                        state: false,
-                    });
-                }
-                else if (event.keyCode === 65) {
-                    socket.emit('keypress', {
-                        inputId: 'left',
-                        state: false,
-                    });
-                }
-                else if (event.keyCode === 68) {
-                    socket.emit('keypress', {
-                        inputId: 'right',
-                        state: false,
-                    });
-                }
-            }
-
-            function getPosition(event) {
-                var x = event.x;
-                var y = event.y;
-
-                var canvas = document.getElementById("ctx");
-
-                x -= canvas.offsetLeft;
-                y -= canvas.offsetTop;
-
-                alert("x:" + x + " y:" + y);
-            }
-
-            //rendering
             function drawMap() {
                 var p = Player.list[selfId];
                 for (var j = 0; j < p.map.length; j++){
@@ -332,6 +267,7 @@
                 drawLighting();
             }
 
+//RENDER
             function render() {
                 if (selfId == null)
                     return;
@@ -341,7 +277,7 @@
                 drawMap();
                 drawMapOverlay();
                 drawPlayers();
-                drawCursor();
+                Cursor.draw();
                 //drawForeground(); 
 
 
@@ -350,77 +286,130 @@
                 ctx.drawImage(shadowCanvas, WIDTH, HEIGHT);
             }
 
-            var selfId;
-             //game loop
-
-            function getMousePos(canvas, evt) {
-                var rect = canvas.getBoundingClientRect();
-                return {
-                    x: evt.clientX - rect.left,
-                    y: evt.clientY - rect.top
-                };
-            }
-
             function getDistance(entity1, entity2) {
-                var x = entity1.x - entity2.x;
-                var y = entity1.y - entity2.y;
+                var x = entity1.x - entity2.dx;
+                var y = entity1.y - entity2.dy;
                 return Math.sqrt(Math.pow(x, 2)+Math.pow(y,2));
             }
             function isColliding(entity1, entity2) {
                 var distance = getDistance(entity1, entity2);
-                if (distance < 10)
+                if (distance < Cursor.width)
                     return true;
                 else
                     return false;
             }
-            
+
             function update() {
                 if (selfId == null)
                     return;
                 //update debug
-                $('#playerX').html('PLAYERX: ' + Player.list[selfId].x);
-                $('#playerY').html('PLAYERY: ' + Player.list[selfId].y);
-
+                $('#playerPOS').html('PLAYERPOS: ' + Player.list[selfId].x + ', ' + Player.list[selfId].y);
+                $('#DCXDCY').html('DCX/DCY: ' + Player.list[selfId].dx + ', ' + Player.list[selfId].dy);
                 //player collisions
-                for (var e in Player.list) {
-                    if (e == selfId)
-                        continue;
-                    if (isColliding(Player.list[selfId], Player.list[e])) {
-                        socket.emit('chatMsg', Player.list[selfId].id + ' is colliding with ' + Player.list[e].id);       
-                    }
-                }
+                //for (var i in Player.list) {
+                //    if (i == selfId)
+                //        continue;
+                //    if (isColliding(Player.list[selfId], Player.list[i])) {
+                //        socket.emit('chatMsg', Player.list[selfId].id + ' is colliding with ' + Player.list[i].id);       
+                //    }
+                //}
                 //cursor collision
             }
 
-            var mouseX, mouseY;
+//EVENTS
+            document.onkeydown = function (event) {
+                if (event.keyCode === 87) {
+                    socket.emit('keypress', {
+                        inputId: 'up',
+                        state: true
+                    });
+                }
+                else if (event.keyCode === 83) {
+                    socket.emit('keypress', {
+                        inputId: 'down',
+                        state: true
+                    });
+                }
+                else if (event.keyCode === 65) {
+                    socket.emit('keypress', {
+                        inputId: 'left',
+                        state: true
+                    });
+                }
+                else if (event.keyCode === 68) {
+                    socket.emit('keypress', {
+                        inputId: 'right',
+                        state: true
+                    });
+                }
+            }
+            document.onkeyup = function (event) {
+                if (event.keyCode === 87) {
+                    socket.emit('keypress', {
+                        inputId: 'up',
+                        state: false,
+                    });
+                }
+                else if (event.keyCode === 83) {
+                    socket.emit('keypress', {
+                        inputId: 'down',
+                        state: false,
+                    });
+                }
+                else if (event.keyCode === 65) {
+                    socket.emit('keypress', {
+                        inputId: 'left',
+                        state: false,
+                    });
+                }
+                else if (event.keyCode === 68) {
+                    socket.emit('keypress', {
+                        inputId: 'right',
+                        state: false,
+                    });
+                }
+            }
+            var Cursor = {
+                x: null,
+                y: null,
+                width:  TW/4,
+                height:  TH/4,
+                draw:  function () {
+                    ctx.fillStyle = "#FF6A6A";
+                    ctx.fillRect(this.x, this.y, TW/4, TH/4);
+                }
+            };
             var ctx = document.getElementById('ctx').getContext('2d');
             ctx.canvas.addEventListener('mousemove', setMousePosition, false);
             function setMousePosition(e) {
-                mouseX = e.clientX;
-                mouseY = e.clientY;
-                //$('#mouse').html('MOUSEPOS: ' + mouseX + ', ' + mouseY);
+                Cursor.x = e.clientX;
+                Cursor.y = e.clientY;
+                $('#mouse').html('MOUSEPOS: ' + Cursor.x + ', ' + Cursor.y);
             }
-            function drawCursor() {
-                ctx.fillStyle = "#FF6A6A";
-                ctx.fillRect(mouseX, mouseY, TW/2, TH/2);
+            ctx.canvas.addEventListener('click', Selection, false);
+            function Selection(e) {
+                var p = Player.list[selfId];
+                for (var i in Player.list) {
+                    if (isColliding(Cursor, Player.list[i])) {
+                        var message;
+                        if (i == selfId)
+                            message = 'You examine yourself. You\'re not really sure why.';
+                        else
+                            message = 'You examine ' + Player.list[i].id + '. He probably smells.';
+                        socket.emit('chatMsg', message);
+                    } else
+                        continue;
+                }
             }
-
+////////////
+//INIT//////
+////////////
+            var selfId;
             function init() {
-                //prerendering
                 prerender();
-                //event debug handlers
-                ctx.canvas.addEventListener('click', function (event) {
-                    var p = Player.list[selfId];
-                    var mouseX, mouseY;
-                    
-                    var status = document.getElementById('mouse');
-                    //$('#mouse').html('MOUSEPOS: ' + mouseX + ', ' + mouseY);
-                });
                 var previoustime = Date.now();
                 var frames = 0;
-                //prerender();
-                //MAIN LOOP
-                function main(time) {
+/*MAIN*/        function main(time) {
                     requestAnimationFrame(main);
                     frames++;
                     while (Date.now() - previoustime > 1000) {                  
@@ -428,7 +417,7 @@
                         previoustime += 1000;
                         frames = 0;
                     }
-                    //update();
+                    update();
                     render();
                 }
                 main();
