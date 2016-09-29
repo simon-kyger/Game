@@ -25,7 +25,32 @@
                 <div id="playerPOS">PLAYERPOS:</div>
                 <div id="DCXDCY">DCX/DCY:</div>
             </div>
-            <!--ADDITIONALUI-->
+            <div class="div-table">
+                <div class="div-table-row">
+                    <div id="PlayerName" class="div-table-col">Player:</div>
+                    <div class="div-table-col" style="float:right">INF:</div>
+                </div>
+                <div class="div-table-row">
+                    <div class="div-table-col">HP:</div>
+                    <div class="div-table-col"></div>
+                    <div class="div-table-col"></div>
+                </div>
+                <div class="div-table-row">
+                    <div class="div-table-col">MANA:</div>
+                    <div class="div-table-col"></div>
+                    <div class="div-table-col"></div>
+                </div>
+                <div class="div-table-row">
+                    <div class="div-table-col">END:</div>
+                    <div class="div-table-col"></div>
+                    <div class="div-table-col"></div>
+                </div>
+                <div class="div-table-row">
+                    <div id="TARGET"class="div-table-col">TARGET:</div>
+                    <div class="div-table-col"></div>
+                    <div class="div-table-col"></div>
+                </div>
+            </div>
         </div>
         <script>
             var socket = io();
@@ -64,6 +89,11 @@
                 if (!chat.preventNewScroll) 
                     chat.scrollBottom(); // On mouseleave go to bottom
             });
+            chat.examine = function (message, consideration) {
+                chat.printer.append('<div style="color:'+consideration+';">' + message.replace(/\n/g, '<br>') + '</div>');
+                chat.chatinput[0].value = ''; // CLEAR TEXTAREA
+                chat.scrollBottom();
+            }
 
             socket.on('addToChat', function (data) {
                 chat.printer.append('<div>' + data.replace(/\n/g, '<br>') + '</div>');
@@ -71,11 +101,8 @@
                 chat.scrollBottom();
             });
 
-            //GAME
-            //width of height of dev env
             var WIDTH = 256;
             var HEIGHT = 144;
-            //width and height of tiles
             var TW = 128;
             var TH = 128;
             var ctx = document.getElementById("ctx").getContext("2d");
@@ -117,17 +144,20 @@
                     map: init.map,
                     mapOverlay: init.mapOverlay,
                     frame: init.frame,
+                    pclass: init.pclass,
+                    name: init.name,
                     mapx: null,
                     mapy: null,
-                    pclass: init.pclass,
                     isSelected: false,
                     realm: null,
                     dx: null,
                     dy: null,
+                    width: TW,
+                    height: TH,
                 }
                 self.draw = function () {
-                    self.dx = self.x - Player.list[selfId].x + WIDTH/2;
-                    self.dy = self.y - Player.list[selfId].y + HEIGHT/2; 
+                    self.dx = self.x - Player.list[selfId].x + WIDTH/2 - self.width/2;
+                    self.dy = self.y - Player.list[selfId].y + HEIGHT/2 - self.height/2; 
                     if (self.spd == 0) {
                         if (self.dir == 'right'){
                             ctx.drawImage(sprite.player, 0, 0, TW, TH, self.dx, self.dy, TW, TH);
@@ -263,6 +293,19 @@
 
             }
 
+            var Target = {
+                x: null,
+                y: null,
+                width:  TW,
+                height: TH,
+                hp: null,
+                draw:  function (target) {
+                    ctx.fillStyle = "#FF6A6A";
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
+            };
+            Target.current = null;
+
             function prerender() {
                 drawLighting();
             }
@@ -278,6 +321,7 @@
                 drawMapOverlay();
                 drawPlayers();
                 Cursor.draw();
+                Target.draw(Cursor.target);
                 //drawForeground(); 
 
 
@@ -303,8 +347,11 @@
                 if (selfId == null)
                     return;
                 //update debug
-                $('#playerPOS').html('PLAYERPOS: ' + Player.list[selfId].x + ', ' + Player.list[selfId].y);
-                $('#DCXDCY').html('DCX/DCY: ' + Player.list[selfId].dx + ', ' + Player.list[selfId].dy);
+                var p = Player.list[selfId];
+                $('#playerPOS').html('PLAYERPOS: ' + p.x + ', ' + p.y);
+                $('#DCXDCY').html('DCX/DCY: ' + p.dx + ', ' + p.dy);
+                $('#PlayerName').html(p.name);
+                $('#TARGET').html('TARGET: ' + Cursor.target.name);
                 //player collisions
                 //for (var i in Player.list) {
                 //    if (i == selfId)
@@ -369,16 +416,18 @@
                     });
                 }
             }
+            
             var Cursor = {
                 x: null,
                 y: null,
-                width:  TW/4,
-                height:  TH/4,
+                width:  TW,
+                height:  TH,
                 draw:  function () {
                     ctx.fillStyle = "#FF6A6A";
-                    ctx.fillRect(this.x, this.y, TW/4, TH/4);
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
                 }
             };
+            Cursor.target = {};
             var ctx = document.getElementById('ctx').getContext('2d');
             ctx.canvas.addEventListener('mousemove', setMousePosition, false);
             function setMousePosition(e) {
@@ -391,14 +440,21 @@
                 var p = Player.list[selfId];
                 for (var i in Player.list) {
                     if (isColliding(Cursor, Player.list[i])) {
+                        Cursor.target = Player.list[i];
                         var message;
-                        if (i == selfId)
+                        var consideration;
+                        if (i == selfId) {
                             message = 'You examine yourself. You\'re not really sure why.';
-                        else
+                            consideration = 'green';
+                        } else {
                             message = 'You examine ' + Player.list[i].id + '. He probably smells.';
-                        socket.emit('chatMsg', message);
-                    } else
-                        continue;
+                            consideration = '#3399ff';
+                        }
+                        chat.examine(message, consideration);
+                        break;
+                    } else {
+                        Cursor.target = '';
+                    }
                 }
             }
 ////////////

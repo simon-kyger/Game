@@ -18,8 +18,8 @@ const TH = 128;
 //player Class
 var Player = function (id) {
     var self = {
-        x: 0,
-        y: 0,
+        x: 128,
+        y: 128,
         id: id,
         movUp: false,
         movDown: false,
@@ -33,6 +33,7 @@ var Player = function (id) {
         height: TH,
         map: map,
         mapOverlay: mapOverlay,
+        name: 'SandorClegane',
         pclass: 'warrior',
         img: '/client/sprites/warrior.png',
     }
@@ -59,14 +60,14 @@ var Player = function (id) {
         if (!self.movRight && !self.movLeft && !self.movDown && !self.movUp)
             self.spd = 0;
         //map absolute boundaries
-        if (self.x < 0)
-            self.x = 0;
-        if (self.y < 0)
-            self.y = 0;
-        if (self.x > map[0].length * TW -TW/2)
-            self.x = map[0].length * TW -TW/2;
-        if (self.y > map.length * TH -TH)
-            self.y = map.length * TH -TH;
+        if (self.x < self.width)
+            self.x = self.width;
+        if (self.y < self.height)
+            self.y = self.width;
+        if (self.x > (map[0].length-1) * TW)
+            self.x = (map[0].length-1) * TW;
+        if (self.y > (map.length-1) * TH)
+            self.y = (map.length-1) * TH;
     }  
     self.getInitPack = function() {
         return {
@@ -85,6 +86,7 @@ var Player = function (id) {
             map: self.map,
             mapOverlay: self.mapOverlay,
             pclass: self.pclass,
+            name: self.name,
         };
     }
     self.getUpdatePack = function () {

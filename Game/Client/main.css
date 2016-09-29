@@ -1,5 +1,3 @@
-* { margin: 0; padding: 0;}
-
 body, canvas {
     margin: 0;
     padding: 0;
@@ -12,6 +10,7 @@ canvas {
     width: 100%;
     height: 100%;
 }
+
 #ctx2 {
     pointer-events:none;
 }
@@ -29,32 +28,67 @@ canvas {
     font-family: 'Lucida Console';
     font-size: 14px;
 }
-
 .chat .messages{
-  background-color: rgba(0,0,0,0.5);
-  overflow:hidden;
-  width:100%;
-  height:85%;
+    background-color: rgba(0,0,0,0.5);
+    overflow:hidden;
+    width:100%;
+    height:85%;
 }
 .chat .messages:hover{
-
-  overflow-y:scroll;
+    overflow-y:scroll;
 }
 .chat > .chatinput{
-  resize: vertical;
-  font-size:15px;
-  border:0;
-  width: 100%;
-  background-color: black;
-  color: white;
-  height: 15%
+    resize: vertical;
+    font-size:15px;
+    border:0;
+    width: 100%;
+    background-color: black;
+    color: white;
+    height: 20%
 }
 
 #debug {
-   position: absolute;
-   font-family: 'Lucida Console';
-   font-size: 18px;
-   color: red;
-   border: 2px solid black;
-   background-color: rgba(0, 0, 0, .5);
+    z-index: 999;
+    position: absolute;
+    font-family: 'Lucida Console';
+    font-size: 18px;
+    color: red;
+    border: 2px solid black;
+    background-color: rgba(0, 0, 0, .5);
+}
+
+#target {
+    font-family:Helvetica, Arial, sans-serif;
+    position:absolute;
+    bottom: 0;
+    width: 30%;
+    height: 25%;
+    color:#777;
+    overflow:hidden;
+    background-color: rgba(0,0,0,0.5);
+    color: white;
+    font-family: 'Lucida Console';
+    font-size: 14px;
+}
+
+.div-table{
+    z-index: 10;
+    position: absolute;
+    top: 0;
+    right: 0;
+    display:table;         
+    width:30%;        
+    font-family: 'Lucida Console';
+    font-size: 15px;
+    color: white;
+    border: 2px solid black;
+    background-color: rgba(0, 0, 0, .5);
+}
+.div-table-row{
+    display:table-row;
+    clear:both;
+}
+.div-table-col{
+    float:left;/*fix for  buggy browsers*/
+    display:table-column;          
 }
