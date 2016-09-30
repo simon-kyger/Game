@@ -6,6 +6,49 @@
         <script src="client/js/requestanimationframe.js"></script>
         <link href="client/main.css" rel="stylesheet"</link>
         <link rel="shortcut icon" href="favicon.ico" type='image/x-icon'/ >
+        <style type="text/css">
+            ::-webkit-scrollbar {
+                width: 15px;
+                height: 15px;
+            }
+
+            ::-webkit-scrollbar-button {
+                width: 0px;
+                height: 0px;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #020202;
+                border: 36px none #080808;
+                border-radius: 0px;
+            }
+
+                ::-webkit-scrollbar-thumb:hover {
+                    background: #0f0f0f;
+                }
+
+                ::-webkit-scrollbar-thumb:active {
+                    background: #000000;
+                }
+
+            ::-webkit-scrollbar-track {
+                background: #666666;
+                border: 32px none #000000;
+                border-radius: 0px;
+            }
+
+                ::-webkit-scrollbar-track:hover {
+                    background: #666666;
+                }
+
+                ::-webkit-scrollbar-track:active {
+                    background: #333333;
+                }
+
+            ::-webkit-scrollbar-corner {
+                background: transparent;
+            }
+        </style>
     </head>
     <body>
         <div id="game">
@@ -53,57 +96,8 @@
             </div>
         </div>
         <script>
+//INIT
             var socket = io();
-            var chat = $('#chat');
-            chat.printer = $('#messages', chat);
-            chat.chatinput = $('#chatinput', chat);
-            chat.height = chat.printer.height();
-            chat.preventNewScroll = false;
-            chat.scrollBottom = function() {
-                if (!chat.preventNewScroll) { // if mouse is not over printer
-                    chat.printer.stop().animate({
-                        scrollTop: chat.printer[0].scrollHeight - chat.height
-                    }, 600); // SET SCROLLER TO BOTTOM
-                }
-            }
-            chat.scrollBottom();
-            chat.postMessage = function (e) {
-                // after hitting enter but allowing new lines using shift+enter
-                if (e.which == 13 && !e.shiftKey) {
-                    e.preventDefault();
-                    var msg = chat.chatinput.val(); 
-                    // not empty / space
-                    if ($.trim(msg)) {
-                        socket.emit('chatMsg', msg);
-                        chat.chatinput[0].value = ''; // CLEAR TEXTAREA
-                    }
-                }
-            }
-            chat.chatinput.keyup(chat.postMessage);
-            // prevent scrolling when reading past messages
-            chat.hover(function() {
-                    window.removeEventListener('keyup', keyinputhandler);
-                    window.removeEventListener('keydown', keyinputhandler);
-                    socket.emit('keypress', {
-                        state: 'chatting'
-                    });
-                }, function(){
-                    chat.scrollBottom(); // On mouseleave go to bottom
-                    window.addEventListener('keyup', keyinputhandler, false);
-                    window.addEventListener('keydown', keyinputhandler, false);
-                }
-            );
-            chat.examine = function (message, consideration) {
-                chat.printer.append('<div style="color:'+consideration+';">' + message.replace(/\n/g, '<br>') + '</div>');
-                chat.chatinput[0].value = ''; // CLEAR TEXTAREA
-                chat.scrollBottom();
-            }
-
-            socket.on('addToChat', function (data) {
-                chat.printer.append('<div>' + data.replace(/\n/g, '<br>') + '</div>');
-                chat.scrollBottom();
-            });
-
             var WIDTH = 256;
             var HEIGHT = 144;
             var TW = 128;
@@ -155,17 +149,17 @@
                     realm: null,
                     dx: null,
                     dy: null,
-                    width: TW,
-                    height: TH,
+                    width: init.width,
+                    height: init.height,
                 }
                 self.draw = function () {
-                    self.dx = self.x - Player.list[selfId].x + WIDTH/2 - self.width/2;
-                    self.dy = self.y - Player.list[selfId].y + HEIGHT/2 - self.height/2; 
+                    self.dx = self.x - Player.list[selfId].x + WIDTH / 2 - self.width;
+                    self.dy = self.y - Player.list[selfId].y + HEIGHT / 2 - self.height;
                     if (self.spd == 0) {
-                        if (self.dir == 'right'){
+                        if (self.dir == 'right') {
                             ctx.drawImage(sprite.player, 0, 0, TW, TH, self.dx, self.dy, TW, TH);
                         }
-                        if (self.dir == 'left'){
+                        if (self.dir == 'left') {
                             ctx.drawImage(sprite.player, 512, 0, TW, TH, self.dx, self.dy, TW, TH);
                         }
                     }
@@ -176,11 +170,11 @@
                             ctx.drawImage(sprite.player, sourceoffset, 0, TW, TH, self.dx, self.dy, TW, TH);
                         }
                         if (self.dir == 'left') {
-                            sourceoffset = sourceoffset * TW + TW*4;
+                            sourceoffset = sourceoffset * TW + TW * 4;
                             ctx.drawImage(sprite.player, sourceoffset, 0, TW, TH, self.dx, self.dy, TW, TH);
                         }
 
-                        self.frame+= .1;
+                        self.frame += .1;
                     }
                     if (self.isSelected) {
                         ctx.strokeStyle = 'rgba(255,0,0,1)';
@@ -193,6 +187,60 @@
             };
             //identification
             Player.list = {};
+
+//CHAT
+            var chat = $('#chat');
+            chat.printer = $('#messages', chat);
+            chat.chatinput = $('#chatinput', chat);
+            chat.height = chat.printer.height();
+            chat.preventNewScroll = false;
+            chat.scrollBottom = function() {
+                if (!chat.preventNewScroll) { // if mouse is not over printer
+                    chat.printer.stop().animate({
+                        scrollTop: chat.printer[0].scrollHeight - chat.height
+                    }, 600); // SET SCROLLER TO BOTTOM
+                }
+            }
+            chat.scrollBottom();
+            chat.postMessage = function (e) {
+                // after hitting enter but allowing new lines using shift+enter
+                if (e.which == 13 && !e.shiftKey) {
+                    e.preventDefault();
+                    var msg = chat.chatinput.val(); 
+                    // not empty / space
+                    if ($.trim(msg)) {
+                        socket.emit('chatMsg', msg);
+                        chat.chatinput[0].value = ''; // CLEAR TEXTAREA
+                    }
+                }
+            }
+            chat.chatinput.keyup(chat.postMessage);
+            // prevent scrolling when reading past messages
+            chat.chatinput.hover(function() {
+                    window.removeEventListener('keyup', keyinputhandler);
+                    window.removeEventListener('keydown', keyinputhandler);
+                    socket.emit('keypress', {
+                        state: 'chatting'
+                    });
+                }, function(){
+                    chat.scrollBottom(); // On mouseleave go to bottom
+                    window.addEventListener('keyup', keyinputhandler, false);
+                    window.addEventListener('keydown', keyinputhandler, false);
+                    chat.chatinput.blur();
+                }
+            );
+            //if users prefer to be able to have text within the field, while moving
+            //chat.hover(function () { }, function () { chat.chatinput.blur(); }); //if leaving chat area, lose focus of input
+            chat.examine = function (message, consideration) {
+                chat.printer.append('<div style="color:'+consideration+';">' + message.replace(/\n/g, '<br>') + '</div>');
+                chat.chatinput[0].value = ''; // CLEAR TEXTAREA
+                chat.scrollBottom();
+            }
+
+            socket.on('addToChat', function (data) {
+                chat.printer.append('<div>' + data.replace(/\n/g, '<br>') + '</div>');
+                chat.scrollBottom();
+            });
 
 //SERVER
             socket.on('init', function (data) {
@@ -223,6 +271,7 @@
                     delete Player.list[data.player[i]];
             });
 
+//RENDERING
             function drawMap() {
                 var p = Player.list[selfId];
                 for (var j = 0; j < p.map.length; j++){
@@ -296,24 +345,10 @@
 
             }
 
-            var Target = {
-                x: null,
-                y: null,
-                width:  TW,
-                height: TH,
-                hp: null,
-                draw:  function (target) {
-                    ctx.fillStyle = "#FF6A6A";
-                    ctx.fillRect(this.x, this.y, this.width, this.height);
-                }
-            };
-            Target.current = null;
-
             function prerender() {
                 drawLighting();
             }
 
-//RENDER
             function render() {
                 if (selfId == null)
                     return;
@@ -324,7 +359,6 @@
                 drawMapOverlay();
                 drawPlayers();
                 Cursor.draw();
-                Target.draw(Cursor.target);
                 //drawForeground(); 
 
 
@@ -333,34 +367,30 @@
                 ctx.drawImage(shadowCanvas, WIDTH, HEIGHT);
             }
 
-            function getDistance(entity1, entity2) {
-                var x = entity1.x - entity2.dx;
-                var y = entity1.y - entity2.dy;
-                return Math.sqrt(Math.pow(x, 2)+Math.pow(y,2));
-            }
-            function isColliding(entity1, entity2) {
-                var distance = getDistance(entity1, entity2);
-                if (distance < Cursor.width)
-                    return true;
-                else
-                    return false;
-            }
-
+//UPDATE
             function update() {
                 if (selfId == null)
                     return;
-                //update debug
                 var p = Player.list[selfId];
+
+                //DEBUG
                 $('#playerPOS').html('PLAYERPOS: ' + p.x + ', ' + p.y);
                 $('#DCXDCY').html('DCX/DCY: ' + p.dx + ', ' + p.dy);
-                $('#PlayerName').html(p.name);
-                $('#TARGET').html('TARGET: ' + Cursor.target.name);
                 $('#mouse').html('MOUSEPOS: ' + Cursor.x + ', ' + Cursor.y);
+
+                //UI
+                $('#PlayerName').html(p.name);
+                if (Cursor.target.name)
+                    $('#TARGET').html('TARGET: ' + Cursor.target.name);
+                else
+                    $('#TARGET').html('TARGET: ');
+
+                //other updates
                 //player collisions
                 //for (var i in Player.list) {
                 //    if (i == selfId)
                 //        continue;
-                //    if (isColliding(Player.list[selfId], Player.list[i])) {
+                //    if (isCollidinfg(Player.list[selfId], Player.list[i])) {
                 //        socket.emit('chatMsg', Player.list[selfId].id + ' is colliding with ' + Player.list[i].id);       
                 //    }
                 //}
@@ -368,7 +398,6 @@
             }
 
 //EVENTS
-
             window.addEventListener('keydown', keyinputhandler, false);
             window.addEventListener('keyup', keyinputhandler, false);
             function keyinputhandler(e) {
@@ -425,12 +454,11 @@
                     }
                 }
             }
-
             var Cursor = {
                 x: null,
                 y: null,
-                width:  TW,
-                height:  TH,
+                width:  1, //this makes the cursor nearly invisible, for debugging turn this up
+                height:  1, //see above
                 draw:  function () {
                     ctx.fillStyle = "#FF6A6A";
                     ctx.fillRect(this.x, this.y, this.width, this.height);
@@ -447,7 +475,7 @@
             function Selection(e) {
                 var p = Player.list[selfId];
                 for (var i in Player.list) {
-                    if (isColliding(Cursor, Player.list[i])) {
+                    if (isCursorColliding(Cursor, Player.list[i])) {
                         Cursor.target = Player.list[i];
                         var message;
                         var consideration;
@@ -465,15 +493,38 @@
                     }
                 }
             }
-////////////
-//INIT//////
-////////////
+
+//UTILITY
+            //@TYPE- boolean
+            //works only for cursor against another entity. if testing entity vs entity, use another function
+            //
+            function isCursorColliding(Cursor, entity2) {
+                var ctop    = Cursor.y;
+                var cbot    = Cursor.y + Cursor.height;
+                var cleft   = Cursor.x;
+                var cright  = Cursor.x + Cursor.width;
+
+                var e2left  = entity2.dx;
+                var e2top   = entity2.dy;
+                var e2bot   = entity2.dy + entity2.height;
+                var e2right = entity2.dx + entity2.width * .625;    //the reason for this is
+                                                                    //because the sprite width itself is actually 80px, 
+                                                                    //there is offset in the source, i'll shoot myself in the foot later
+                                                                    //i am approximating click distance so this won't be pixel perfect
+                var collision = true;    
+                //warning, blood sweat and tears here
+                if ((ctop > e2bot) || (cbot < e2top) || (cleft > e2right) || (cright < e2left))
+                    collision = false;
+                return collision;
+            }
+
+//MAIN
             var selfId;
             function init() {
                 prerender();
                 var previoustime = Date.now();
                 var frames = 0;
-/*MAIN*/        function main(time) {
+                function main(time) {
                     requestAnimationFrame(main);
                     frames++;
                     while (Date.now() - previoustime > 1000) {                  
