@@ -75,20 +75,24 @@
                     // not empty / space
                     if ($.trim(msg)) {
                         socket.emit('chatMsg', msg);
+                        chat.chatinput[0].value = ''; // CLEAR TEXTAREA
                     }
                 }
             }
             chat.chatinput.keyup(chat.postMessage);
             // prevent scrolling when reading past messages
-            chat.printer.hover(function (e) {
-                if (e.type == 'mouseenter')
-                    chat.preventNewScroll = true;
-                else
-                    chat.preventNewScroll = false;
-
-                if (!chat.preventNewScroll) 
+            chat.hover(function() {
+                    window.removeEventListener('keyup', keyinputhandler);
+                    window.removeEventListener('keydown', keyinputhandler);
+                    socket.emit('keypress', {
+                        state: 'chatting'
+                    });
+                }, function(){
                     chat.scrollBottom(); // On mouseleave go to bottom
-            });
+                    window.addEventListener('keyup', keyinputhandler, false);
+                    window.addEventListener('keydown', keyinputhandler, false);
+                }
+            );
             chat.examine = function (message, consideration) {
                 chat.printer.append('<div style="color:'+consideration+';">' + message.replace(/\n/g, '<br>') + '</div>');
                 chat.chatinput[0].value = ''; // CLEAR TEXTAREA
@@ -97,7 +101,6 @@
 
             socket.on('addToChat', function (data) {
                 chat.printer.append('<div>' + data.replace(/\n/g, '<br>') + '</div>');
-                chat.chatinput[0].value = ''; // CLEAR TEXTAREA
                 chat.scrollBottom();
             });
 
@@ -352,6 +355,7 @@
                 $('#DCXDCY').html('DCX/DCY: ' + p.dx + ', ' + p.dy);
                 $('#PlayerName').html(p.name);
                 $('#TARGET').html('TARGET: ' + Cursor.target.name);
+                $('#mouse').html('MOUSEPOS: ' + Cursor.x + ', ' + Cursor.y);
                 //player collisions
                 //for (var i in Player.list) {
                 //    if (i == selfId)
@@ -364,59 +368,64 @@
             }
 
 //EVENTS
-            document.onkeydown = function (event) {
-                if (event.keyCode === 87) {
-                    socket.emit('keypress', {
-                        inputId: 'up',
-                        state: true
-                    });
+
+            window.addEventListener('keydown', keyinputhandler, false);
+            window.addEventListener('keyup', keyinputhandler, false);
+            function keyinputhandler(e) {
+                if (e.type === 'keydown') {
+                    if (e.keyCode === 87) {
+                        socket.emit('keypress', {
+                            inputId: 'up',
+                            state: true
+                        });
+                    }
+                    else if (e.keyCode === 83) {
+                        socket.emit('keypress', {
+                            inputId: 'down',
+                            state: true
+                        });
+                    }
+                    else if (e.keyCode === 65) {
+                        socket.emit('keypress', {
+                            inputId: 'left',
+                            state: true
+                        });
+                    }
+                    else if (e.keyCode === 68) {
+                        socket.emit('keypress', {
+                            inputId: 'right',
+                            state: true
+                        });
+                    }
                 }
-                else if (event.keyCode === 83) {
-                    socket.emit('keypress', {
-                        inputId: 'down',
-                        state: true
-                    });
-                }
-                else if (event.keyCode === 65) {
-                    socket.emit('keypress', {
-                        inputId: 'left',
-                        state: true
-                    });
-                }
-                else if (event.keyCode === 68) {
-                    socket.emit('keypress', {
-                        inputId: 'right',
-                        state: true
-                    });
+                if (e.type === 'keyup') {
+                    if (e.keyCode === 87) {
+                        socket.emit('keypress', {
+                            inputId: 'up',
+                            state: false,
+                        });
+                    }
+                    else if (e.keyCode === 83) {
+                        socket.emit('keypress', {
+                            inputId: 'down',
+                            state: false,
+                        });
+                    }
+                    else if (e.keyCode === 65) {
+                        socket.emit('keypress', {
+                            inputId: 'left',
+                            state: false,
+                        });
+                    }
+                    else if (e.keyCode === 68) {
+                        socket.emit('keypress', {
+                            inputId: 'right',
+                            state: false,
+                        });
+                    }
                 }
             }
-            document.onkeyup = function (event) {
-                if (event.keyCode === 87) {
-                    socket.emit('keypress', {
-                        inputId: 'up',
-                        state: false,
-                    });
-                }
-                else if (event.keyCode === 83) {
-                    socket.emit('keypress', {
-                        inputId: 'down',
-                        state: false,
-                    });
-                }
-                else if (event.keyCode === 65) {
-                    socket.emit('keypress', {
-                        inputId: 'left',
-                        state: false,
-                    });
-                }
-                else if (event.keyCode === 68) {
-                    socket.emit('keypress', {
-                        inputId: 'right',
-                        state: false,
-                    });
-                }
-            }
-            
+
             var Cursor = {
                 x: null,
                 y: null,
@@ -433,7 +442,6 @@
             function setMousePosition(e) {
                 Cursor.x = e.clientX;
                 Cursor.y = e.clientY;
-                $('#mouse').html('MOUSEPOS: ' + Cursor.x + ', ' + Cursor.y);
             }
             ctx.canvas.addEventListener('click', Selection, false);
             function Selection(e) {

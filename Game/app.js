@@ -26,7 +26,7 @@ var Player = function (id) {
         movLeft: false,
         movRight: false,
         dir: 'right',
-        vel: 16,
+        vel: 10,
         spd: 0,
         frame: 0,
         width: TW,
@@ -107,6 +107,8 @@ Player.list = {};
 Player.onConnect = function (socket) {
     var player = Player(socket.id);
     socket.on('keypress', function (data) {
+        if (data.state === 'chatting')
+            player.movUp = player.movDown = player.movLeft = player.movRight = false;
         if (data.inputId === 'up') {
             player.movUp = data.state;
         }
@@ -220,4 +222,4 @@ setInterval(function () {
     }
     initPack.player = [];
     removePack.player = [];
-}, 50); //20 times per second
+}, 30); //20 times per second
