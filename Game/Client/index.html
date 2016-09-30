@@ -96,35 +96,19 @@
             </div>
         </div>
         <script>
-//INIT
+//INIT & GLOBALS
             var socket = io();
+            var selfId;
             var WIDTH = 256;
             var HEIGHT = 144;
             var TW = 128;
             var TH = 128;
+            var chat = $('#chat');
+            var sprite = {};
             var ctx = document.getElementById("ctx").getContext("2d");
             ctx.imageSmoothingEnabled = false;
-            var sprite = {};
-            sprite.player = new Image();
-            sprite.player.src = '/client/sprites/warrior.png';
-            sprite.grass1 = new Image();
-            sprite.grass1.src = '/client/sprites/grass1.png';
-            sprite.grass2 = new Image();
-            sprite.grass2.src = '/client/sprites/grass2.png';
-            sprite.rock1 = new Image();
-            sprite.rock1.src = '/client/sprites/rock1.png';
-            sprite.shrub1 = new Image();
-            sprite.shrub1.src = '/client/sprites/shrub1.png';
-            sprite.shrub2 = new Image();
-            sprite.shrub2.src = '/client/sprites/shrub2.png';
-            sprite.stump = new Image();
-            sprite.stump.src = '/client/sprites/stump.png';
-            sprite.tree1 = new Image();
-            sprite.tree1.src = '/client/sprites/tree1.png';
-            sprite.tree2 = new Image();
-            sprite.tree2.src = '/client/sprites/tree2.png';
-            sprite.tree3 = new Image();
-            sprite.tree3.src = '/client/sprites/tree3.png';
+
+//CLASSES
             var Player = function (init) {
                 var self = {
                     id: init.id,
@@ -151,10 +135,11 @@
                     dy: null,
                     width: init.width,
                     height: init.height,
+                    img: init.img
                 }
                 self.draw = function () {
-                    self.dx = self.x - Player.list[selfId].x + WIDTH / 2 - self.width;
-                    self.dy = self.y - Player.list[selfId].y + HEIGHT / 2 - self.height;
+                    self.dx = self.x - Player.list[selfId].x + WIDTH / 2 - self.width/2;
+                    self.dy = self.y - Player.list[selfId].y + HEIGHT / 2 - self.height/2;
                     if (self.spd == 0) {
                         if (self.dir == 'right') {
                             ctx.drawImage(sprite.player, 0, 0, TW, TH, self.dx, self.dy, TW, TH);
@@ -188,8 +173,72 @@
             //identification
             Player.list = {};
 
+            var Cursor = {
+                x: null,
+                y: null,
+                width: 1, //this makes the cursor nearly invisible, for debugging turn this up
+                height: 1, //see above
+                draw: function () { //enable this in debug to draw the cursor
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
+            };
+            Cursor.target = {};
+
+//SERVERSIDE UPDATE
+            socket.on('init', function (data) {
+                if (data.selfId !== undefined)
+                    selfId = data.selfId;
+                for (var i = 0; i < data.player.length; i++) {
+                    new Player(data.player[i]);
+                }
+                loadAssets();
+            });
+            socket.on('update', function (data) {
+                for (var i = 0; i < data.player.length; i++) {
+                    var pack = data.player[i];
+                    var p = Player.list[pack.id];
+                    if (p) {
+                        if (p.x !== undefined)
+                            p.x = pack.x;
+                        if (p.y !== undefined)
+                            p.y = pack.y;
+                        if (p.dir !== undefined)
+                            p.dir = pack.dir;
+                        if (p.spd !== undefined)
+                            p.spd = pack.spd;
+                    }
+                }
+            });
+            socket.on('remove', function (data) {
+                for (var i = 0; i < data.player.length; i++)
+                    delete Player.list[data.player[i]];
+            });
+
+//IMAGE LOADER
+            function loadAssets() {
+                sprite.player = new Image();
+                sprite.player.src = Player.list[selfId].img;
+                sprite.grass1 = new Image();
+                sprite.grass1.src = '/client/sprites/grass1.png';
+                sprite.grass2 = new Image();
+                sprite.grass2.src = '/client/sprites/grass2.png';
+                sprite.rock1 = new Image();
+                sprite.rock1.src = '/client/sprites/rock1.png';
+                sprite.shrub1 = new Image();
+                sprite.shrub1.src = '/client/sprites/shrub1.png';
+                sprite.shrub2 = new Image();
+                sprite.shrub2.src = '/client/sprites/shrub2.png';
+                sprite.stump = new Image();
+                sprite.stump.src = '/client/sprites/stump.png';
+                sprite.tree1 = new Image();
+                sprite.tree1.src = '/client/sprites/tree1.png';
+                sprite.tree2 = new Image();
+                sprite.tree2.src = '/client/sprites/tree2.png';
+                sprite.tree3 = new Image();
+                sprite.tree3.src = '/client/sprites/tree3.png';
+            }
+
 //CHAT
-            var chat = $('#chat');
             chat.printer = $('#messages', chat);
             chat.chatinput = $('#chatinput', chat);
             chat.height = chat.printer.height();
@@ -240,35 +289,6 @@
             socket.on('addToChat', function (data) {
                 chat.printer.append('<div>' + data.replace(/\n/g, '<br>') + '</div>');
                 chat.scrollBottom();
-            });
-
-//SERVER
-            socket.on('init', function (data) {
-                if (data.selfId !== undefined)
-                    selfId = data.selfId;
-                for (var i = 0; i < data.player.length; i++) {
-                    new Player(data.player[i]);
-                }
-            });
-            socket.on('update', function (data) {
-                for (var i = 0; i < data.player.length; i++) {
-                    var pack = data.player[i];
-                    var p = Player.list[pack.id];
-                    if (p) {
-                        if (p.x !== undefined)
-                            p.x = pack.x;
-                        if (p.y !== undefined)
-                            p.y = pack.y;
-                        if (p.dir !== undefined)
-                            p.dir = pack.dir;
-                        if (p.spd !== undefined)
-                            p.spd = pack.spd;
-                    }
-                }
-            });
-            socket.on('remove', function (data) {
-                for (var i = 0; i < data.player.length; i++)
-                    delete Player.list[data.player[i]];
             });
 
 //RENDERING
@@ -347,19 +367,24 @@
 
             function prerender() {
                 drawLighting();
+                drawForeground();
             }
 
             function render() {
+                //REQUIRED
                 if (selfId == null)
                     return;
+
+                //DEBUG
+                //Cursor.draw();
+                //ENDDEBUG
+
                 ctx.canvas.width = WIDTH = innerWidth;
                 ctx.canvas.height = HEIGHT = innerHeight;
                 ctx.clearRect(0, 0, WIDTH, HEIGHT);
                 drawMap();
                 drawMapOverlay();
                 drawPlayers();
-                Cursor.draw();
-                //drawForeground(); 
 
 
                 //prerendered stuff goes here:
@@ -367,16 +392,18 @@
                 ctx.drawImage(shadowCanvas, WIDTH, HEIGHT);
             }
 
-//UPDATE
+//CLIENTSIDE UPDATE
             function update() {
+                //REQUIRED
                 if (selfId == null)
                     return;
-                var p = Player.list[selfId];
 
                 //DEBUG
+                var p = Player.list[selfId];
                 $('#playerPOS').html('PLAYERPOS: ' + p.x + ', ' + p.y);
                 $('#DCXDCY').html('DCX/DCY: ' + p.dx + ', ' + p.dy);
                 $('#mouse').html('MOUSEPOS: ' + Cursor.x + ', ' + Cursor.y);
+                //ENDDEBUG
 
                 //UI
                 $('#PlayerName').html(p.name);
@@ -387,14 +414,13 @@
 
                 //other updates
                 //player collisions
-                //for (var i in Player.list) {
-                //    if (i == selfId)
-                //        continue;
-                //    if (isCollidinfg(Player.list[selfId], Player.list[i])) {
-                //        socket.emit('chatMsg', Player.list[selfId].id + ' is colliding with ' + Player.list[i].id);       
-                //    }
-                //}
-                //cursor collision
+                for (var i in Player.list) {
+                    if (i == selfId)
+                        continue;
+                    if (isPlayerColliding(Player.list[selfId], Player.list[i])) {
+                        socket.emit('chatMsg', Player.list[selfId].id + ' is colliding with ' + Player.list[i].id);       
+                    }
+                }
             }
 
 //EVENTS
@@ -454,18 +480,6 @@
                     }
                 }
             }
-            var Cursor = {
-                x: null,
-                y: null,
-                width:  1, //this makes the cursor nearly invisible, for debugging turn this up
-                height:  1, //see above
-                draw:  function () {
-                    ctx.fillStyle = "#FF6A6A";
-                    ctx.fillRect(this.x, this.y, this.width, this.height);
-                }
-            };
-            Cursor.target = {};
-            var ctx = document.getElementById('ctx').getContext('2d');
             ctx.canvas.addEventListener('mousemove', setMousePosition, false);
             function setMousePosition(e) {
                 Cursor.x = e.clientX;
@@ -518,8 +532,27 @@
                 return collision;
             }
 
+            function isPlayerColliding(entity1, entity2) {
+                if (entity1.dx == null || entity1.dy == null)
+                    return false;
+                var e1top = entity1.dy;
+                var e1bot = entity1.dy + entity1.height;
+                var e1left = entity1.dx;
+                var e1right = entity1.dx + entity1.width *.625;
+
+                var e2left = entity2.dx;
+                var e2top = entity2.dy;
+                var e2bot = entity2.dy + entity2.height;
+                var e2right = entity2.dx + entity2.width * .625;
+                var collision = true;
+
+                if ((e1top > e2bot) || (e1bot < e2top) || (e1left > e2right) || (e1right < e2left))
+                    collision = false;
+                return collision;
+            }
+
 //MAIN
-            var selfId;
+
             function init() {
                 prerender();
                 var previoustime = Date.now();

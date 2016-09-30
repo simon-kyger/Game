@@ -35,7 +35,7 @@ var Player = function (id) {
         mapOverlay: mapOverlay,
         name: 'SandorClegane',
         pclass: 'warrior',
-        img: '/client/sprites/warrior.png',
+        img: '/client/sprites/mage.png',
     }
     self.updatePosition = function () {
         if (self.movUp) {
@@ -87,6 +87,7 @@ var Player = function (id) {
             mapOverlay: self.mapOverlay,
             pclass: self.pclass,
             name: self.name,
+            img: self.img
         };
     }
     self.getUpdatePack = function () {
