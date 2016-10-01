@@ -16,7 +16,7 @@ server.listen(port);
 const TW = 128;
 const TH = 128;
 //player Class
-var Player = function (id, name, pclass, img) {
+var Player = function (id, name, pclass) {
     var self = {
         x: 128,
         y: 128,
@@ -35,7 +35,6 @@ var Player = function (id, name, pclass, img) {
         mapOverlay: mapOverlay,
         name: name,
         pclass: pclass,
-        img: img,
     }
     self.updatePosition = function () {
         if (self.movUp) {
@@ -97,8 +96,6 @@ var Player = function (id, name, pclass, img) {
             y: self.y,
             dir: self.dir,
             spd: self.spd,
-            name: self.name, //should be removed later to a callback
-            img: self.img, //same
         };
     }
 
@@ -108,15 +105,10 @@ var Player = function (id, name, pclass, img) {
 }
 Player.list = {};
 Player.onConnect = function (socket, name, pclass) {
-    var hero;
-    var img;
-    if (pclass == 'Warrior') {
-        img = '/client/sprites/warrior.png';
+    var player = new Player(socket.id, name, pclass);
+    for (var i in SOCKET_CONNECTIONS) {
+        SOCKET_CONNECTIONS[i].emit('addToChat', player.name +' has connected.');
     }
-    else {
-        img = '/client/sprites/mage.png';
-    }
-    var player = Player(socket.id, name, pclass, img);
     socket.on('keypress', function (data) {
         if (data.state === 'chatting')
             player.movUp = player.movDown = player.movLeft = player.movRight = false;
@@ -146,8 +138,17 @@ Player.getAllInitPack = function () {
     return players;
 }
 Player.onDisconnect = function (socket) {
-    delete Player.list[socket.id];
-    removePack.player.push(socket.id);
+    try {
+        for (var i in SOCKET_CONNECTIONS) {
+            SOCKET_CONNECTIONS[i].emit('addToChat', Player.list[socket.id].name + ' has disconnected.');
+        }
+        delete Player.list[socket.id];
+        removePack.player.push(socket.id);
+    } catch (e) {
+        //Basically this block of code gets called if the server is taken down, but a player still keeps his session alive
+        //and then if the server is brought back online, and the player disconnects, this exception is triggered.
+        //for now we will silently fail because there is nothing we want to broadcast to the server anyway.
+    }
 }
 Player.update = function () {
     var data = [];
@@ -182,14 +183,7 @@ io.sockets.on('connection', function (socket) {
             socket.emit('loginresponse', { success: false });
     });   
     //send a message to node console on server and to the clients
-    console.log(socket.id + ' has connected.');
-    for (var i in SOCKET_CONNECTIONS)
-        SOCKET_CONNECTIONS[i].emit('addToChat', socket.id + ' has connected.');
     socket.on('disconnect', function () {
-        var playerid = ("" + socket.id);
-        for (var i in SOCKET_CONNECTIONS)
-            SOCKET_CONNECTIONS[i].emit('addToChat', socket.id + ' has disconnected.');
-        console.log('Player: ' + socket.id + ' has disconnected.');
         Player.onDisconnect(socket);
         delete SOCKET_CONNECTIONS[socket.id];
     });

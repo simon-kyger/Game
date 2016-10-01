@@ -4,51 +4,8 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
         <script src="client/js/requestanimationframe.js"></script>
-        <link href="client/main.css" rel="stylesheet"</link>
-        <link rel="shortcut icon" href="favicon.ico" type='image/x-icon'/ >
-        <style type="text/css">
-            ::-webkit-scrollbar {
-                width: 15px;
-                height: 15px;
-            }
-
-            ::-webkit-scrollbar-button {
-                width: 0px;
-                height: 0px;
-            }
-
-            ::-webkit-scrollbar-thumb {
-                background: #020202;
-                border: 36px none #080808;
-                border-radius: 0px;
-            }
-
-                ::-webkit-scrollbar-thumb:hover {
-                    background: #0f0f0f;
-                }
-
-                ::-webkit-scrollbar-thumb:active {
-                    background: #000000;
-                }
-
-            ::-webkit-scrollbar-track {
-                background: #666666;
-                border: 32px none #000000;
-                border-radius: 0px;
-            }
-
-                ::-webkit-scrollbar-track:hover {
-                    background: #666666;
-                }
-
-                ::-webkit-scrollbar-track:active {
-                    background: #333333;
-                }
-
-            ::-webkit-scrollbar-corner {
-                background: transparent;
-            }
-        </style>
+        <link href="client/main.css" rel="stylesheet" />
+        <link rel="shortcut icon" href="favicon.ico" type='image/x-icon'>
     </head>
     <body>
         <div id="signin">
@@ -123,12 +80,13 @@
             var TH = 128;
             var chat = $('#chat');
             var sprite = {};
+            var loginbtn = $('#loginbtn');
             var ctx = document.getElementById("ctx").getContext("2d");
             ctx.imageSmoothingEnabled = false;
 
 //SIGNIN
+
             $('#game').hide();
-            var loginbtn = $('#loginbtn');
             loginbtn.on("click", function () {
                 var username = $('#username').val();
                 var password = $('#password').val();
@@ -139,7 +97,6 @@
                     alert("Invalid username/password");
                 else {
                     var hero = $("input[name=hero]:checked").val();
-                    console.log(hero);
                     socket.emit('login', {
                         username: $('#username').val(),
                         password: $('#password').val(),
@@ -181,28 +138,30 @@
                     dy: null,
                     width: init.width,
                     height: init.height,
-                    img: init.img
                 }
                 self.draw = function () {
                     self.dx = self.x - Player.list[selfId].x + WIDTH / 2 - self.width/2;
-                    self.dy = self.y - Player.list[selfId].y + HEIGHT / 2 - self.height/2;
+                    self.dy = self.y - Player.list[selfId].y + HEIGHT / 2 - self.height / 2;
+                    var sh = 0; //source height
+                    if (self.pclass == 'Mage')
+                        sh = 128;
                     if (self.spd == 0) {
                         if (self.dir == 'right') {
-                            ctx.drawImage(sprite.player, 0, 0, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(sprite.player, 0, sh, TW, TH, self.dx, self.dy, TW, TH);
                         }
                         if (self.dir == 'left') {
-                            ctx.drawImage(sprite.player, 512, 0, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(sprite.player, 512, sh, TW, TH, self.dx, self.dy, TW, TH);
                         }
                     }
                     else {
                         var sourceoffset = Math.floor(self.frame) % 4;
                         if (self.dir == 'right') {
                             sourceoffset = sourceoffset * TW;
-                            ctx.drawImage(sprite.player, sourceoffset, 0, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(sprite.player, sourceoffset, sh, TW, TH, self.dx, self.dy, TW, TH);
                         }
                         if (self.dir == 'left') {
                             sourceoffset = sourceoffset * TW + TW * 4;
-                            ctx.drawImage(sprite.player, sourceoffset, 0, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(sprite.player, sourceoffset, sh, TW, TH, self.dx, self.dy, TW, TH);
                         }
 
                         self.frame += .1;
@@ -224,7 +183,7 @@
                 y: null,
                 width: 1, //this makes the cursor nearly invisible, for debugging turn this up
                 height: 1, //see above
-                draw: function () { //enable this in debug to draw the cursor
+                draw: function () { //call this in debug to draw the cursor
                     ctx.fillRect(this.x, this.y, this.width, this.height);
                 }
             };
@@ -267,7 +226,7 @@
                 if (selfId == null)
                     return;
                 sprite.player = new Image();
-                sprite.player.src = Player.list[selfId].img;
+                sprite.player.src = '/client/sprites/players.png';
                 sprite.grass1 = new Image();
                 sprite.grass1.src = '/client/sprites/grass1.png';
                 sprite.grass2 = new Image();
@@ -332,7 +291,6 @@
             //chat.hover(function () { }, function () { chat.chatinput.blur(); }); //if leaving chat area, lose focus of input
             chat.examine = function (message, consideration) {
                 chat.printer.append('<div style="color:'+consideration+';">' + message.replace(/\n/g, '<br>') + '</div>');
-                chat.chatinput[0].value = ''; // CLEAR TEXTAREA
                 chat.scrollBottom();
             }
 
