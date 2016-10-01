@@ -51,6 +51,18 @@
         </style>
     </head>
     <body>
+        <div id="signin">
+            Username: <input id="username" type="text" />
+            Password: <input id="password" type="password" />
+            <br />
+            Choose Hero: 
+            <form id="heroselection" action="">
+                <input type="radio" name="hero" value="Mage"> Mage<br>
+                <input type="radio" name="hero" value="Warrior"> Warrior<br>
+            </form>
+            <button id="loginbtn">Login</button>
+            <button id="signupbtn">Sign Up</button>
+        </div>
         <div id="game">
             <!--GAMEBOARD-->
             <canvas id="ctx" width="256" height="144"></canvas>
@@ -72,6 +84,11 @@
                 <div class="div-table-row">
                     <div id="PlayerName" class="div-table-col">Player:</div>
                     <div class="div-table-col" style="float:right">INF:</div>
+                </div>
+                <div class="div-table-row">
+                    <div id ="PCLASS" class="div-table-col">CLASS:</div>
+                    <div class="div-table-col"></div>
+                    <div class="div-table-col"></div>
                 </div>
                 <div class="div-table-row">
                     <div class="div-table-col">HP:</div>
@@ -96,6 +113,7 @@
             </div>
         </div>
         <script>
+
 //INIT & GLOBALS
             var socket = io();
             var selfId;
@@ -108,6 +126,34 @@
             var ctx = document.getElementById("ctx").getContext("2d");
             ctx.imageSmoothingEnabled = false;
 
+//SIGNIN
+            $('#game').hide();
+            var loginbtn = $('#loginbtn');
+            loginbtn.on("click", function () {
+                var username = $('#username').val();
+                var password = $('#password').val();
+                if ($('#heroselection input:radio:checked').length == 0) {
+                    alert('Pick a hero!');
+                }
+                else if (!username || !password)
+                    alert("Invalid username/password");
+                else {
+                    var hero = $("input[name=hero]:checked").val();
+                    console.log(hero);
+                    socket.emit('login', {
+                        username: $('#username').val(),
+                        password: $('#password').val(),
+                        pclass: hero
+                    });
+                }
+            });
+            socket.on('loginresponse', function (data) {
+                if (data.success) {
+                    $('#signin').hide();
+                    $('#game').show();
+                } else
+                    alert("Invalid username/password.");
+            });
 //CLASSES
             var Player = function (init) {
                 var self = {
@@ -206,6 +252,8 @@
                             p.dir = pack.dir;
                         if (p.spd !== undefined)
                             p.spd = pack.spd;
+                        if (p.img !== undefined)
+                            p.img = pack.img;
                     }
                 }
             });
@@ -216,6 +264,8 @@
 
 //IMAGE LOADER
             function loadAssets() {
+                if (selfId == null)
+                    return;
                 sprite.player = new Image();
                 sprite.player.src = Player.list[selfId].img;
                 sprite.grass1 = new Image();
@@ -403,6 +453,7 @@
                 $('#playerPOS').html('PLAYERPOS: ' + p.x + ', ' + p.y);
                 $('#DCXDCY').html('DCX/DCY: ' + p.dx + ', ' + p.dy);
                 $('#mouse').html('MOUSEPOS: ' + Cursor.x + ', ' + Cursor.y);
+
                 //ENDDEBUG
 
                 //UI
@@ -411,7 +462,7 @@
                     $('#TARGET').html('TARGET: ' + Cursor.target.name);
                 else
                     $('#TARGET').html('TARGET: ');
-
+                $('#PCLASS').html('CLASS: ' + p.pclass);
                 //other updates
                 //player collisions
                 for (var i in Player.list) {
@@ -497,7 +548,7 @@
                             message = 'You examine yourself. You\'re not really sure why.';
                             consideration = 'green';
                         } else {
-                            message = 'You examine ' + Player.list[i].id + '. He probably smells.';
+                            message = 'You examine ' + Player.list[i].name + '. He probably smells.';
                             consideration = '#3399ff';
                         }
                         chat.examine(message, consideration);

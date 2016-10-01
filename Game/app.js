@@ -16,7 +16,7 @@ server.listen(port);
 const TW = 128;
 const TH = 128;
 //player Class
-var Player = function (id) {
+var Player = function (id, name, pclass, img) {
     var self = {
         x: 128,
         y: 128,
@@ -33,9 +33,9 @@ var Player = function (id) {
         height: TH,
         map: map,
         mapOverlay: mapOverlay,
-        name: 'SandorClegane',
-        pclass: 'warrior',
-        img: '/client/sprites/mage.png',
+        name: name,
+        pclass: pclass,
+        img: img,
     }
     self.updatePosition = function () {
         if (self.movUp) {
@@ -97,6 +97,8 @@ var Player = function (id) {
             y: self.y,
             dir: self.dir,
             spd: self.spd,
+            name: self.name, //should be removed later to a callback
+            img: self.img, //same
         };
     }
 
@@ -105,8 +107,16 @@ var Player = function (id) {
     return self;
 }
 Player.list = {};
-Player.onConnect = function (socket) {
-    var player = Player(socket.id);
+Player.onConnect = function (socket, name, pclass) {
+    var hero;
+    var img;
+    if (pclass == 'Warrior') {
+        img = '/client/sprites/warrior.png';
+    }
+    else {
+        img = '/client/sprites/mage.png';
+    }
+    var player = Player(socket.id, name, pclass, img);
     socket.on('keypress', function (data) {
         if (data.state === 'chatting')
             player.movUp = player.movDown = player.movLeft = player.movRight = false;
@@ -151,12 +161,26 @@ Player.update = function () {
 
 //upon connection
 var SOCKET_CONNECTIONS = {};
+var USERS = {};
 var UNIQUEID = 0;
 io.sockets.on('connection', function (socket) {
     socket.id = UNIQUEID;
     UNIQUEID++;
     SOCKET_CONNECTIONS[socket.id] = socket;
-    Player.onConnect(socket);
+    
+    socket.on('login', function (data) {
+        var fdata = data.pclass.toString().replace(/\r?\n$/, '');
+        //if (fdata != 'Warrior' || fdata != 'Mage'){
+        //    socket.emit('loginresponse', { success: false });
+        //    console.log('fdata is: ' +fdata);
+        //    return;
+        //}
+        if (data.username && data.password) {
+            Player.onConnect(socket, data.username, data.pclass);
+            socket.emit('loginresponse', { success: true });
+        } else
+            socket.emit('loginresponse', { success: false });
+    });   
     //send a message to node console on server and to the clients
     console.log(socket.id + ' has connected.');
     for (var i in SOCKET_CONNECTIONS)
