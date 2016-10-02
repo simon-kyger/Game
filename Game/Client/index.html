@@ -130,6 +130,7 @@
                     vel: init.vel,
                     spd: init.spd,
                     frame: init.frame,
+                    sframe: init.sframe,
                     map: init.map,
                     mapOverlay: init.mapOverlay,
                     frame: init.frame,
@@ -143,11 +144,12 @@
                     dy: null,
                     width: init.width,
                     height: init.height,
-                    isCasting: null,
+                    isCasting: init.isCasting,
                     ability1: init.ability1,
                     ability2: init.ability2,
                     ability3: init.ability3,
                     ability4: init.ability4,
+                    status: init.status
                 }
                 self.draw = function () {
                     self.dx = self.x - Player.list[selfId].x + WIDTH / 2 - self.width/2;
@@ -180,6 +182,14 @@
 
                         self.frame += .1;
                     }
+
+                    //handles status impairments
+                    if (self.status == 'slept') {
+                        var sourceoffset = Math.floor(self.sframe) % 8 * TW;
+                        ctx.drawImage(sprite.status, sourceoffset, 0, TW, TH, self.dx, self.dy, TW/2, TH/2);
+                        self.sframe += .1;
+                    }
+                        
                 }
                 Player.list[self.id] = self;
                 return self;
@@ -222,6 +232,10 @@
                             p.spd = pack.spd;
                         if (p.img !== undefined)
                             p.img = pack.img;
+                        if (p.status !== undefined)
+                            p.status = pack.status;
+                        if (p.isCasting !== undefined)
+                            p.isCasting = pack.isCasting;
                     }
                 }
             });
@@ -236,6 +250,8 @@
                     return;
                 sprite.player = new Image();
                 sprite.player.src = '/client/sprites/players.png';
+                sprite.status = new Image();
+                sprite.status.src = '/client/sprites/status.png';
                 sprite.grass1 = new Image();
                 sprite.grass1.src = '/client/sprites/grass1.png';
                 sprite.grass2 = new Image();
@@ -495,12 +511,10 @@
                                 chat.log('You are already casting!', lblue);
                                 return;
                             } else {
-                                socket.emit('chatMsg', Player.list[selfId].name + ' begins casting a spell.', blue);
-                                var timenow = Date.now();
-                                Player.list[selfId].isCasting = true;
-                                socket.emit('keypress', {
+                                socket.emit('ability', {
                                     inputId: 'a1',
-                                    state: true
+                                    self: Player.list[selfId],
+                                    target: Cursor.target
                                 });
                             }
                         } else {

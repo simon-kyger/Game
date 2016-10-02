@@ -35,23 +35,38 @@ var Player = function (id, name, pclass, realm) {
         mapOverlay: mapOverlay,
         name: name,
         pclass: pclass,
-        realm: realm
+        realm: realm,
+        sframe: 0,
+        status: null,
+        interupted: false,
+        isCasting: false
     }
     self.updatePosition = function () {
+        if (self.status == 'slept') {
+            self.spd = 0;
+            setTimeout(function() {
+                self.status = '';
+            }, 4000);
+            return;
+        }
         if (self.movUp) {
+            self.isCasting = false;
             self.spd = self.vel;
             self.y -= self.spd;
         }
         if (self.movDown) {
+            self.isCasting = false;
             self.spd = self.vel;
             self.y += self.vel;
         }
         if (self.movLeft) {
+            self.isCasting = false;
             self.spd = self.vel;
             self.x -= self.spd;
             self.dir = 'left';
         }
         if (self.movRight) {
+            self.isCasting = false;
             self.spd = self.vel;
             self.x += self.spd;
             self.dir = 'right';
@@ -88,7 +103,10 @@ var Player = function (id, name, pclass, realm) {
             pclass: self.pclass,
             name: self.name,
             img: self.img,
-            realm: realm,
+            realm: self.realm,
+            sframe: self.sframe,
+            status: self.status,
+            isCasting: self.isCasting,
         };
     }
     self.getUpdatePack = function () {
@@ -98,6 +116,9 @@ var Player = function (id, name, pclass, realm) {
             y: self.y,
             dir: self.dir,
             spd: self.spd,
+            status: self.status,
+            interupted: self.interupted,
+            isCasting: self.isCasting
         };
     }
 
@@ -126,9 +147,52 @@ Player.onConnect = function (socket, name, pclass, realm) {
         if (data.inputId === 'right') {
             player.movRight = data.state;
         }
-        if (data.inputId === 'a1') {
-            console.log('pressing ability1');
+    });
+    
+    socket.on('ability', function (data) {
+        for (var i in Player.list) {
+            if (Player.list[i].id == data.self.id) {
+                Player.list[i].isCasting = true;
+                for (var i in SOCKET_CONNECTIONS) {
+                    try {
+                        SOCKET_CONNECTIONS[i].emit('addToChat', Player.list[i].name + ' is casting a spell.', '#4c4cff');
+                    } catch (e) {
+                      //prevents disconnected without a state trying to echo stuff.
+                    }
+                }
+            }
         }
+        
+        var ctime = Date.now();
+        var castcompleted = true;
+        var checkMovement = setInterval(function () {
+            for (var i in Player.list) {
+                if (Player.list[i].id == data.self.id) {
+                    if (Player.list[i].isCasting == false) {
+                        SOCKET_CONNECTIONS[i].emit('addToChat', 'You move and interupt your cast!', '#4c4cff');
+                        castcompleted = false;
+                        clearInterval(checkMovement);
+                    }
+                }
+            }
+        }, 200);
+
+        setTimeout(function () {
+            if (castcompleted) {
+                for (var i in Player.list) {
+                    if (Player.list[i].id == data.target.id) {
+                        Player.list[i].status = 'slept';
+                        for (var j in SOCKET_CONNECTIONS) {
+                            SOCKET_CONNECTIONS[j].emit('addToChat', Player.list[i].name + ' has fallen asleep.', 'violet');
+                        }
+                    }
+                    if (Player.list[i].id == data.self.id) {
+                        clearInterval(checkMovement);
+                        Player.list[i].isCasting = false;
+                    }
+                }
+            }
+        }, 2000);
     });
 
     socket.emit('init', {
