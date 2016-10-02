@@ -17,6 +17,12 @@
                 <input type="radio" name="hero" value="Mage"> Mage<br>
                 <input type="radio" name="hero" value="Warrior"> Warrior<br>
             </form>
+            Choose Realm:
+            <form id="realmselection" action="">
+                <input type="radio" name="realm" value="Aeolian"> Aeolian<br>
+                <input type="radio" name="realm" value="Dorian"> Dorian<br>
+                <input type="radio" name="realm" value="Phrygian"> Phrygian<br>
+            </form>
             <button id="loginbtn">Login</button>
             <button id="signupbtn">Sign Up</button>
         </div>
@@ -39,33 +45,28 @@
             </div>
             <div class="div-table">
                 <div class="div-table-row">
-                    <div id="PlayerName" class="div-table-col">Player:</div>
-                    <div class="div-table-col" style="float:right">INF:</div>
+                    <div id="PLAYERNAME" class="div-table-col">Player:</div>
                 </div>
                 <div class="div-table-row">
-                    <div id ="PCLASS" class="div-table-col">CLASS:</div>
-                    <div class="div-table-col"></div>
-                    <div class="div-table-col"></div>
+                    <div id ="PCLASS" class="div-table-col">CLASS:</div>                    
+                </div>
+                <div class="div-table-row">
+                    <div class="div-table-col">INF:</div>
+                </div>
+                <div class="div-table-row">
+                    <div id="REALM" class="div-table-col">REALM:</div>
                 </div>
                 <div class="div-table-row">
                     <div class="div-table-col">HP:</div>
-                    <div class="div-table-col"></div>
-                    <div class="div-table-col"></div>
                 </div>
                 <div class="div-table-row">
                     <div class="div-table-col">MANA:</div>
-                    <div class="div-table-col"></div>
-                    <div class="div-table-col"></div>
                 </div>
                 <div class="div-table-row">
                     <div class="div-table-col">END:</div>
-                    <div class="div-table-col"></div>
-                    <div class="div-table-col"></div>
                 </div>
                 <div class="div-table-row">
                     <div id="TARGET"class="div-table-col">TARGET:</div>
-                    <div class="div-table-col"></div>
-                    <div class="div-table-col"></div>
                 </div>
             </div>
         </div>
@@ -92,21 +93,25 @@
                 var password = $('#password').val();
                 if ($('#heroselection input:radio:checked').length == 0) {
                     alert('Pick a hero!');
-                }
-                else if (!username || !password)
+                } else if ($('#realmselection input:radio:checked').length == 0) {
+                    alert('Pick a realm!');
+                } else if (!username || !password) {
                     alert("Invalid username/password");
-                else {
+                } else {
                     var hero = $("input[name=hero]:checked").val();
+                    var realm = $("input[name=realm]:checked").val();
                     socket.emit('login', {
                         username: $('#username').val(),
                         password: $('#password').val(),
-                        pclass: hero
+                        pclass: hero,
+                        realm: realm
                     });
                 }
             });
             socket.on('loginresponse', function (data) {
                 if (data.success) {
                     $('#signin').hide();
+                    init();
                     $('#game').show();
                 } else
                     alert("Invalid username/password.");
@@ -133,18 +138,27 @@
                     mapx: null,
                     mapy: null,
                     isSelected: false,
-                    realm: null,
+                    realm: init.realm,
                     dx: null,
                     dy: null,
                     width: init.width,
                     height: init.height,
+                    isCasting: null,
+                    ability1: init.ability1,
+                    ability2: init.ability2,
+                    ability3: init.ability3,
+                    ability4: init.ability4,
                 }
                 self.draw = function () {
                     self.dx = self.x - Player.list[selfId].x + WIDTH / 2 - self.width/2;
                     self.dy = self.y - Player.list[selfId].y + HEIGHT / 2 - self.height / 2;
+
+                    // handles archtype
                     var sh = 0; //source height
                     if (self.pclass == 'Mage')
                         sh = 128;
+
+                    //handles movement
                     if (self.spd == 0) {
                         if (self.dir == 'right') {
                             ctx.drawImage(sprite.player, 0, sh, TW, TH, self.dx, self.dy, TW, TH);
@@ -165,11 +179,6 @@
                         }
 
                         self.frame += .1;
-                    }
-                    if (self.isSelected) {
-                        ctx.strokeStyle = 'rgba(255,0,0,1)';
-                        ctx.lineWidth = 0.5;
-                        ctx.strokeRect(x, y, TW * s, TH * s);
                     }
                 }
                 Player.list[self.id] = self;
@@ -267,7 +276,7 @@
                     var msg = chat.chatinput.val(); 
                     // not empty / space
                     if ($.trim(msg)) {
-                        socket.emit('chatMsg', msg);
+                        socket.emit('chatMsg', Player.list[selfId].name+ ': '+msg, 'white');
                         chat.chatinput[0].value = ''; // CLEAR TEXTAREA
                     }
                 }
@@ -287,15 +296,22 @@
                     chat.chatinput.blur();
                 }
             );
-            //if users prefer to be able to have text within the field, while moving
-            //chat.hover(function () { }, function () { chat.chatinput.blur(); }); //if leaving chat area, lose focus of input
-            chat.examine = function (message, consideration) {
-                chat.printer.append('<div style="color:'+consideration+';">' + message.replace(/\n/g, '<br>') + '</div>');
+            //clientside logging
+            chat.log = function (message, color) {
+                //remove last element if its over 100
+                if ($("#messages > div").length > 100){
+                    $("#messages > div").first().remove();
+                }
+                chat.printer.append('<div style="color:'+color+';">' + message.replace(/\n/g, '<br>') + '</div>');
                 chat.scrollBottom();
             }
-
-            socket.on('addToChat', function (data) {
-                chat.printer.append('<div>' + data.replace(/\n/g, '<br>') + '</div>');
+            //serverside logging
+            socket.on('addToChat', function (message, color) {
+                //remove last element if its over 100
+                if ($("#messages > div").length > 100) {
+                    $("#messages > div").first().remove();
+                }
+                chat.printer.append('<div style="color:'+color+';">' + message.replace(/\n/g, '<br>') + '</div>');
                 chat.scrollBottom();
             });
 
@@ -415,7 +431,8 @@
                 //ENDDEBUG
 
                 //UI
-                $('#PlayerName').html(p.name);
+                $('#PLAYERNAME').html('NAME: ' +p.name);
+                $('#REALM').html('REALM: '+ p.realm);
                 if (Cursor.target.name)
                     $('#TARGET').html('TARGET: ' + Cursor.target.name);
                 else
@@ -423,19 +440,31 @@
                 $('#PCLASS').html('CLASS: ' + p.pclass);
                 //other updates
                 //player collisions
-                for (var i in Player.list) {
-                    if (i == selfId)
-                        continue;
-                    if (isPlayerColliding(Player.list[selfId], Player.list[i])) {
-                        socket.emit('chatMsg', Player.list[selfId].id + ' is colliding with ' + Player.list[i].id);       
-                    }
-                }
+                //for (var i in Player.list) {
+                //    if (i == selfId)
+                //        continue;
+                //    if (isPlayerColliding(Player.list[selfId], Player.list[i])) {
+                //        socket.emit('chatMsg', Player.list[selfId].id + ' is colliding with ' + Player.list[i].id);       
+                //    }
+                //}
             }
 
 //EVENTS
             window.addEventListener('keydown', keyinputhandler, false);
             window.addEventListener('keyup', keyinputhandler, false);
             function keyinputhandler(e) {
+                //87 == W
+                //83 == S
+                //65 == A
+                //68 == D
+                //81 == Q == ability1
+                //60 == E == ability2
+                //82 == R == ability3
+                //70 == F == ability4
+                var message;
+                var red = 'red';
+                var blue = '#4c4cff';
+                var lblue = '#8EE5EE';
                 if (e.type === 'keydown') {
                     if (e.keyCode === 87) {
                         socket.emit('keypress', {
@@ -460,6 +489,23 @@
                             inputId: 'right',
                             state: true
                         });
+                    } else if (e.keyCode === 81) { //q is pressed
+                        if (Cursor.target) {
+                            if (Player.list[selfId].isCasting) {
+                                chat.log('You are already casting!', lblue);
+                                return;
+                            } else {
+                                socket.emit('chatMsg', Player.list[selfId].name + ' begins casting a spell.', blue);
+                                var timenow = Date.now();
+                                Player.list[selfId].isCasting = true;
+                                socket.emit('keypress', {
+                                    inputId: 'a1',
+                                    state: true
+                                });
+                            }
+                        } else {
+                            chat.log('You must have a target to perform ' + Player.list[selfId].ability1 +'.', red);
+                        }
                     }
                 }
                 if (e.type === 'keyup') {
@@ -501,15 +547,14 @@
                     if (isCursorColliding(Cursor, Player.list[i])) {
                         Cursor.target = Player.list[i];
                         var message;
-                        var consideration;
-                        if (i == selfId) {
-                            message = 'You examine yourself. You\'re not really sure why.';
-                            consideration = 'green';
-                        } else {
-                            message = 'You examine ' + Player.list[i].name + '. He probably smells.';
-                            consideration = '#3399ff';
-                        }
-                        chat.examine(message, consideration);
+                        var color = '#8EE5EE';
+                        var currentselection = 'You examine [' + Player.list[i].name + ']. ';
+                        if (Player.list[i].realm === Player.list[selfId].realm) {
+                            message = 'He is a '+ Player.list[i].pclass + ' of your realm.';
+                        } else
+                            message = 'He is a member of the enemy realm!';
+                        chat.log(currentselection, color);
+                        chat.log(message, color);
                         break;
                     } else {
                         Cursor.target = '';
@@ -579,7 +624,6 @@
                 }
                 main();
             }
-            init();
 
 
         </script>

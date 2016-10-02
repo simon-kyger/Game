@@ -16,7 +16,7 @@ server.listen(port);
 const TW = 128;
 const TH = 128;
 //player Class
-var Player = function (id, name, pclass) {
+var Player = function (id, name, pclass, realm) {
     var self = {
         x: 128,
         y: 128,
@@ -26,7 +26,7 @@ var Player = function (id, name, pclass) {
         movLeft: false,
         movRight: false,
         dir: 'right',
-        vel: 10,
+        vel: 16,
         spd: 0,
         frame: 0,
         width: TW,
@@ -35,6 +35,7 @@ var Player = function (id, name, pclass) {
         mapOverlay: mapOverlay,
         name: name,
         pclass: pclass,
+        realm: realm
     }
     self.updatePosition = function () {
         if (self.movUp) {
@@ -86,7 +87,8 @@ var Player = function (id, name, pclass) {
             mapOverlay: self.mapOverlay,
             pclass: self.pclass,
             name: self.name,
-            img: self.img
+            img: self.img,
+            realm: realm,
         };
     }
     self.getUpdatePack = function () {
@@ -104,8 +106,8 @@ var Player = function (id, name, pclass) {
     return self;
 }
 Player.list = {};
-Player.onConnect = function (socket, name, pclass) {
-    var player = new Player(socket.id, name, pclass);
+Player.onConnect = function (socket, name, pclass, realm) {
+    var player = new Player(socket.id, name, pclass, realm);
     for (var i in SOCKET_CONNECTIONS) {
         SOCKET_CONNECTIONS[i].emit('addToChat', player.name +' has connected.');
     }
@@ -123,6 +125,9 @@ Player.onConnect = function (socket, name, pclass) {
         }
         if (data.inputId === 'right') {
             player.movRight = data.state;
+        }
+        if (data.inputId === 'a1') {
+            console.log('pressing ability1');
         }
     });
 
@@ -170,14 +175,16 @@ io.sockets.on('connection', function (socket) {
     SOCKET_CONNECTIONS[socket.id] = socket;
     
     socket.on('login', function (data) {
-        var fdata = data.pclass.toString().replace(/\r?\n$/, '');
+        var pclass = data.pclass.toString().replace(/\r?\n$/, '');
+        var realm = data.realm.toString().replace(/\r?\n$/, '');
+        var username = data.username.toString().replace(/\r?\n$/, '');
         //if (fdata != 'Warrior' || fdata != 'Mage'){
         //    socket.emit('loginresponse', { success: false });
         //    console.log('fdata is: ' +fdata);
         //    return;
         //}
         if (data.username && data.password) {
-            Player.onConnect(socket, data.username, data.pclass);
+            Player.onConnect(socket, username, pclass, realm);
             socket.emit('loginresponse', { success: true });
         } else
             socket.emit('loginresponse', { success: false });
@@ -187,10 +194,10 @@ io.sockets.on('connection', function (socket) {
         Player.onDisconnect(socket);
         delete SOCKET_CONNECTIONS[socket.id];
     });
-    socket.on('chatMsg', function (message) {
+    socket.on('chatMsg', function (message, color) {
         var playerid = ("" + socket.id);
         for (var i in SOCKET_CONNECTIONS) {
-            SOCKET_CONNECTIONS[i].emit('addToChat', playerid + ': ' + message);
+            SOCKET_CONNECTIONS[i].emit('addToChat', message, color);
         }
     });   
 });
@@ -241,4 +248,4 @@ setInterval(function () {
     }
     initPack.player = [];
     removePack.player = [];
-}, 30); //20 times per second
+}, 50); //20 times per second
