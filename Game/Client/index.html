@@ -561,12 +561,12 @@
                     if (isCursorColliding(Cursor, Player.list[i])) {
                         Cursor.target = Player.list[i];
                         var message;
-                        var color = '#8EE5EE';
-                        var currentselection = 'You examine [' + Player.list[i].name + ']. ';
+                        var color = 'coral';
+                        var currentselection = 'You target [' + Player.list[i].name + ']';
                         if (Player.list[i].realm === Player.list[selfId].realm) {
-                            message = 'He is a '+ Player.list[i].pclass + ' of your realm.';
+                            message = 'You examine '+ Player.list[i].name + '. He is a member of the ' + Player.list[i].pclass+ ' class of your realm.';
                         } else
-                            message = 'He is a member of the enemy realm!';
+                            message = 'You examine '+ Player.list[i].name + '. He is a member of the enemy realm!';
                         chat.log(currentselection, color);
                         chat.log(message, color);
                         break;
