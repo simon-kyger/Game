@@ -57,7 +57,7 @@
                     <div id="REALM" class="div-table-col">REALM:</div>
                 </div>
                 <div class="div-table-row">
-                    <div class="div-table-col">HP:</div>
+                    <div id="HP" class="div-table-col">HP:</div>
                 </div>
                 <div class="div-table-row">
                     <div class="div-table-col">MANA:</div>
@@ -149,7 +149,11 @@
                     ability2: init.ability2,
                     ability3: init.ability3,
                     ability4: init.ability4,
-                    status: init.status
+                    status: init.status,
+                    group: null,
+                    hp: init.hp,
+                    hpMAX: init.hpMAX,
+                    isAlive: init.isAlive,
                 }
                 self.draw = function () {
                     self.dx = self.x - Player.list[selfId].x + WIDTH / 2 - self.width/2;
@@ -164,7 +168,10 @@
                         source = sprite.warrior;
 
                     //handles movement
-                    if (self.isCasting) {
+                    if (!self.isAlive) {
+
+                    }
+                    else if (self.isCasting) {
                         var offset = Math.floor(self.frame) % 8 * TW;
                         if (self.dir == 'right') {
                             ctx.drawImage(sprite.mageatk, offset, 0, TW, TH, self.dx, self.dy, TW, TH);
@@ -197,7 +204,7 @@
                     }
 
                     //handles status impairments
-                    if (self.status.slept) {
+                    if (self.status.slept > 0) {
                         var sourceoffset = Math.floor(self.sframe) % 8 * TW;
                         ctx.drawImage(sprite.status, sourceoffset, 0, TW, TH, self.dx, self.dy, TW / 2, TH / 2);
                         self.sframe += .1;
@@ -248,6 +255,12 @@
                             p.status = pack.status;
                         if (p.isCasting !== undefined)
                             p.isCasting = pack.isCasting;
+                        if (p.group !== undefined)
+                            p.group = pack.group;
+                        if (p.hp !== undefined)
+                            p.hp = pack.hp;
+                        if (p.isAlive !== undefined)
+                            p.isAlive = pack.isAlive;
                     }
                 }
             });
@@ -465,11 +478,17 @@
                 //UI
                 $('#PLAYERNAME').html('NAME: ' +p.name);
                 $('#REALM').html('REALM: '+ p.realm);
-                if (Cursor.target.name)
-                    $('#TARGET').html('TARGET: ' + Cursor.target.name);
-                else
+                if (Cursor.target.name){
+                    if (Cursor.target.isAlive == true) {
+                        $('#TARGET').html('TARGET: ' + Cursor.target.name);
+                    } else {
+                        $('#TARGET').html('TARGET: ' + Cursor.target.name + '\'s corpse');
+                    }                        
+                } else {
                     $('#TARGET').html('TARGET: ');
+                }
                 $('#PCLASS').html('CLASS: ' + p.pclass);
+                $('#HP').html('HP: ' + p.hp + '/' + p.hpMAX);
                 //other updates
                 //player collisions
                 //for (var i in Player.list) {
@@ -524,13 +543,12 @@
                     } else if (e.keyCode === 81) { //q is pressed
                         if (Cursor.target) {
                             if (Player.list[selfId].isCasting) {
-                                chat.log('You are already casting!', lblue);
+                                chat.log('You are already performing another ability!', lblue);
                                 return;
                             } else {
-                                socket.emit('ability', {
-                                    inputId: 'a1',
+                                socket.emit('ability1', {
                                     self: Player.list[selfId],
-                                    target: Cursor.target
+                                    target: Cursor.target,
                                 });
                             }
                         } else {
