@@ -37,12 +37,16 @@ var Player = function (id, name, pclass, realm) {
         pclass: pclass,
         realm: realm,
         sframe: 0,
-        status: null,
+        status: {
+            slept: false,
+            snared: false,
+            stunned: false
+        },
         interupted: false,
         isCasting: false
     }
     self.updatePosition = function () {
-        if (self.status == 'slept')
+        if (self.status.slept == true)
             return;
         if (self.movUp) {
             self.isCasting = false;
@@ -127,6 +131,9 @@ Player.onConnect = function (socket, name, pclass, realm) {
     for (var i in SOCKET_CONNECTIONS) {
         SOCKET_CONNECTIONS[i].emit('addToChat', player.name +' has connected.');
     }
+    for (var i in SOCKET_CONNECTIONS) {
+        SOCKET_CONNECTIONS[i].emit('addToChat', 'HELLO!');
+    }
     socket.on('keypress', function (data) {
         if (data.state === 'chatting')
             player.movUp = player.movDown = player.movLeft = player.movRight = false;
@@ -145,57 +152,70 @@ Player.onConnect = function (socket, name, pclass, realm) {
     });
     
     socket.on('ability', function (data) {
+        var caster;
+        var target;
+        var counter = 0;
+        var maxCounter = 2000;
+        var target;
         for (var i in Player.list) {
             if (Player.list[i].id == data.self.id) {
-                Player.list[i].isCasting = true;
-                for (var j in SOCKET_CONNECTIONS) {
-                    try {
-                        SOCKET_CONNECTIONS[j].emit('addToChat', Player.list[i].name + ' is casting a spell.', '#4c4cff');
-                    } catch (e) {
-                      //prevents disconnected without a state trying to echo stuff.
-                    }
-                }
+                caster = Player.list[i];
+                break;
             }
         }
-        
-        var doInterval = setInterval(function () {
-            for (var i in Player.list) {
-                if (Player.list[i].id == data.self.id) {
-                    var caster = Player.list[i];
-                    if (caster.movUp || caster.movDown || caster.movLeft || caster.movRight || caster.interupted) {
-                        SOCKET_CONNECTIONS[i].emit('addToChat', 'Your cast has been interupted!', '#8EE5EE');
-                        clearTimeout(doCast);
-                        clearInterval(doInterval);
-                    }
-                } 
+        for (var i in Player.list) {
+            if (Player.list[i].id == data.target.id) {
+                target = Player.list[i];
+                break;
             }
-        }, 50);
-
-        var doCast = setTimeout(function () {
-            for (var i in Player.list) {
-                if (Player.list[i].id == data.self.id) {
-                    var caster = Player.list[i];
-                    for (var j in Player.list) {
-                        if (Player.list[j].id == data.target.id) {
-                            var target = Player.list[j];
-                            clearInterval(doInterval);
-                            caster.isCasting = false;
-                            sleep(target);
-                        }
+        }
+        //preconditional tests against the cast are made here
+        if (caster.status.slept) {
+            SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You cannot cast while asleep!', 'orange');
+            return;
+        }
+        
+        //begin the cast
+        for (var i in SOCKET_CONNECTIONS) {
+            SOCKET_CONNECTIONS[i].emit('addToChat', caster.name + ' begins casting a spell.', '#4c4cff');
+            caster.isCasting = true;
+        }
+        castInteruptCheck();
+        
+        //during the cast
+        function castInteruptCheck() {
+            var startCast = setInterval(function () {
+                if (caster.movUp || caster.movDown || caster.movLeft || caster.movRight || caster.interupted) {
+                    SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your cast has been interupted!', '#8EE5EE');
+                    caster.isCasting = false;
+                    clearInterval(startCast);
+                } else {
+                    counter += 50;
+                    if (counter >= maxCounter) {
+                        sleep(target);
+                        caster.isCasting = false;
+                        clearInterval(startCast);
                     }
                 }
-            }
-        }, 2000);
-
+            }, 50);
+        }
+        
+        //cast has completed, apply effect to target
         function sleep(target) {
-            for (var k in Player.list) {
-                SOCKET_CONNECTIONS[k].emit('addToChat', target.name + ' has been slept.', 'orchid');
+            for (var i in SOCKET_CONNECTIONS) {
+                SOCKET_CONNECTIONS[i].emit('addToChat', target.name + ' has been slept.', 'orchid');
             }  
-            target.status = 'slept';
+            target.status.slept = true;
+            console.log(target.status);
             target.isCasting = false;
+            target.interupted = true;
             setTimeout(function () {
-                target.status = '';
-            }, 4000);
+                target.status.slept = false;
+                target.interupted = false;
+                for (var i in SOCKET_CONNECTIONS) {
+                    SOCKET_CONNECTIONS[i].emit('addToChat', target.name + ' has awoken.', 'orchid');  
+                } 
+            }, 5000);
         }
     });
 
