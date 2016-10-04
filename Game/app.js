@@ -51,7 +51,8 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
         group: null,
         hp: hpMAX,
         hpMAX: hpMAX,
-        isAlive: true
+        isAlive: true,
+        isAttacking: false,
     }
     self.updatePosition = function () {
         if (self.status.slept > 0 || self.isAlive == false)
@@ -114,13 +115,14 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             sframe: self.sframe,
             status: self.status,
             isCasting: self.isCasting,
+            isAttacking: self.isAttacking,
             ability1: self.ability1,
             ability2: self.ability2,
             ability3: self.ability3,
             ability4: self.ability4,
             hp: self.hp,
             hpMAX: self.hpMAX,
-            isAlive: self.isAlive
+            isAlive: self.isAlive,
         };
     }
     self.getUpdatePack = function () {
@@ -133,10 +135,11 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             status: self.status,
             interupted: self.interupted,
             isCasting: self.isCasting,
+            isAttacking: self.isAttacking,
             group: null,
             hp: self.hp,
             hpMAX: self.hpMAX,
-            isAlive: self.isAlive,
+            isAlive: self.isAlive, 
         };
     }
 
@@ -159,8 +162,8 @@ Player.onConnect = function (socket, name, pclass, realm) {
         ability3 = null;
         ability4 = null;
         hpMAX = 250;
-    } else if (plcass == 'Priest') {
-        ability1 = null;
+    } else if (pclass == 'Priest') {
+        ability1 = 'heal';
         ability2 = null;
         ability3 = null;
         ability4 = null;
@@ -218,9 +221,14 @@ Player.onConnect = function (socket, name, pclass, realm) {
         var distance = Math.sqrt((xdif * xdif) + (ydif * ydif));
         //console.log('distance: ' +distance);
         if (type == 'sleep') {
+            caster.isCasting = true;
             abilitySleep(target, caster, distance);
         } else if (type == 'slice') {
+            caster.isAttacking = true;
             abilitySlice(target, caster, distance);
+        } else if (type == 'heal') {
+            caster.isCasting = true;
+            abilityHeal(target, caster, distance);
         }
     });
 
@@ -229,6 +237,72 @@ Player.onConnect = function (socket, name, pclass, realm) {
         player: Player.getAllInitPack()
     });
 }
+function abilityHeal(target, caster, distance) {
+    var counter = 0;
+    var maxCounter = 2000;
+    //preconditional tests against the cast are made here
+    if (caster.status.slept) {
+        SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You cannot cast while asleep!', 'orange');
+        return;
+    }
+    if (distance > 700) {
+        SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your target is out of range', 'orange');
+        return;
+    }
+    if (target.hp < 1) {
+        SOCKET_CONNECTIONS[caster.id].emit('addToChat', target.name + ' is dead. You can\'t heal them.', 'orange');
+        return;
+    }
+    if (caster.interuptedby) {
+        SOCKET_CONNECTIONS[caster.id].emit('addToChat', caster.interuptedby +' is attacking you and prevented you from casting!', 'coral');
+    }
+    
+    //begin the cast
+    for (var i in SOCKET_CONNECTIONS) {
+        SOCKET_CONNECTIONS[i].emit('addToChat', caster.name + ' begins casting a spell.', '#4c4cff');
+    }
+    
+    //during the cast
+    var startCast = setInterval(function () {
+        if (caster.movUp || caster.movDown || caster.movLeft || caster.movRight || caster.interupted) {
+            SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your cast has been interupted!', '#8EE5EE');
+            caster.isCasting = false;
+            clearInterval(startCast);
+        } else if (target.hp < 1) {
+            SOCKET_CONNECTIONS[caster.id].emit('addToChat', target.name+ ' is now longer a valid target to heal.', '#8EE5EE');
+        } else {
+            counter += 50;
+            if (counter >= maxCounter) {
+                heal(target);
+                caster.isCasting = false;
+                clearInterval(startCast);
+            }
+        }
+    }, 50);
+    
+    //cast has completed, apply effect to target
+    function heal(target) {
+        if (target.hp < 1) {
+            SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your heal has failed!', 'orchid');
+            return;
+        }
+        for (var i in SOCKET_CONNECTIONS) {
+            SOCKET_CONNECTIONS[i].emit('addToChat', target.name + ' has been healed!', 'coral');
+        }
+        var healamt = Math.floor(Math.random() * 31) + 70; //between 70 and 100;
+        //crit chance could be calced here
+        target.hp += healamt;
+        if (target.hp > target.hpMAX)
+            target.hp = target.hpMAX;
+        if (target.name == caster.name)
+            SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You heal yourself for ' + healamt + ' health points.', 'orchid');
+        else {
+            SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You heal ' + target.name + ' for ' + healamt + ' health points.', 'orchid');
+            SOCKET_CONNECTIONS[target.id].emit('addToChat', caster.name + ' has healed you for ' + healamt + ' health points.', 'orchid');
+        }
+    }
+}
+
 function abilitySlice(target, caster, distance) {
     var counter = 0;
     var maxCounter = 1000;
@@ -236,44 +310,60 @@ function abilitySlice(target, caster, distance) {
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You cannot cast while asleep!', 'orange');
         return;
     }
-    if (distance > 150) {
+    if (distance > TW) {
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your target is out of range', 'orange');
         return;
     }
     //begin attack
-    for (var i in SOCKET_CONNECTIONS) {
-        SOCKET_CONNECTIONS[i].emit('addToChat', caster.name + ' slices ' + target.name + '.', '#4c4cff');
-        caster.isCasting = true;
-    }
+    SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You prepare to perform slice on '+ target.name + '.', '#4c4cff');
     //during the cast
     var startCast = setInterval(function () {
-        if (distance > 150) {
+        if (distance > TW) {
             SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your target is out of range!', '#8EE5EE');
-            caster.isCasting = false;
+            caster.isAttacking = false;
             clearInterval(startCast);
         } else if (caster.status.slept > 0) {
             SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your attack was interupted!', '#8EE5EE');
-            caster.isCasting = false;
+            caster.isAttacking = false;
             clearInterval(startCast);
         } else {
             counter += 50;
             if (counter >= maxCounter) {
+                caster.isAttacking = false;
                 slice(target);
-                caster.isCasting = false;
                 clearInterval(startCast);
             }
         }
     }, 50);
-    function slice(target) {
-        var dmg = target.hpMAX / 5;
-        SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You sliced ' + target.name + ' for ' + dmg + ' damage!', 'orange');
+
+    function slice(target) {        
+        var dmg = Math.floor(Math.random() * 31) + 5; //between 5 and 35 
+        //crit chance calced here;
+        SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You sliced '+ target.name +' for ' + dmg + ' damage!', 'orange');
+        for (var i in SOCKET_CONNECTIONS) {
+            SOCKET_CONNECTIONS[i].emit('addToChat', caster.name + ' used [slice] on '+ target.name + '.', 'coral');
+        }
         SOCKET_CONNECTIONS[target.id].emit('addToChat', caster.name + ' attacks you for '+ dmg + ' damage!', 'red');
-        target.hp -= target.hpMAX / 5;
+        target.hp -= dmg;
         target.status.slept = 0;
+        target.interuptedby = caster.name;
+        setTimeout(function () { 
+            target.interuptedby = '';
+        }, 1000);
         if (target.hp < 1) {
+            target.hp = 0;
             target.isAlive = false;
+            SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You have killed ' + target.name + '!');
+            SOCKET_CONNECTIONS[target.id].emit('addToChat', 'You have died.');
+            var color;
+            if (caster.realm == 'Aeolian')
+                color = '#ff9999';
+            else if (caster.realm == 'Dorian')
+                color = '#4c4cff';
+            else
+                color = 'green';
             for (var i in SOCKET_CONNECTIONS) {
-                SOCKET_CONNECTIONS[i].emit('addToChat', target.name + ' was just killed in undefined by '+ caster.name , 'green');
+                SOCKET_CONNECTIONS[i].emit('addToChat', target.name + ' was just killed in [undefined] by '+ caster.name +'.', color);
                 caster.isCasting = true;
             }
         }
@@ -292,16 +382,18 @@ function abilitySleep(target, caster, distance) {
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your target is out of range', 'orange');
         return;
     }
+    if (caster.interuptedby) {
+        SOCKET_CONNECTIONS[caster.id].emit('addToChat', caster.interuptedby + ' is attacking you and prevented you from casting!', 'coral');
+    }
     
     //begin the cast
     for (var i in SOCKET_CONNECTIONS) {
         SOCKET_CONNECTIONS[i].emit('addToChat', caster.name + ' begins casting a spell.', '#4c4cff');
-        caster.isCasting = true;
     }
     
     //during the cast
     var startCast = setInterval(function () {
-        if (caster.movUp || caster.movDown || caster.movLeft || caster.movRight || caster.interupted) {
+        if (caster.movUp || caster.movDown || caster.movLeft || caster.movRight || caster.interuptedby) {
             SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your cast has been interupted!', '#8EE5EE');
             caster.isCasting = false;
             clearInterval(startCast);
@@ -329,10 +421,12 @@ function abilitySleep(target, caster, distance) {
         target.status.slept += 1;
         console.log(target.status);
         target.isCasting = false;
-        target.interupted = true;
+        target.interuptedby = caster.name;
+        setTimeout(function () {
+            target.interuptedby = '';
+        }, 1000);
         setTimeout(function () {
             target.status.slept -= 1;
-            target.interupted = false;
             if (target.status.slept < 1) {
                 for (var i in SOCKET_CONNECTIONS) {
                     SOCKET_CONNECTIONS[i].emit('addToChat', target.name + ' has awoken.', 'orchid');

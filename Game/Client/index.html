@@ -16,6 +16,8 @@
             <form id="heroselection" action="">
                 <input type="radio" name="hero" value="Mage"> Mage<br>
                 <input type="radio" name="hero" value="Warrior"> Warrior<br>
+                <input type="radio" name="hero" value="Priest"> Priest<br>
+                <input type="radio" name="hero" value="Thief"> Thief<br>
             </form>
             Choose Realm:
             <form id="realmselection" action="">
@@ -145,6 +147,7 @@
                     width: init.width,
                     height: init.height,
                     isCasting: init.isCasting,
+                    isAttacking: init.isAttacking,
                     ability1: init.ability1,
                     ability2: init.ability2,
                     ability3: init.ability3,
@@ -171,25 +174,24 @@
                     if (!self.isAlive) {
 
                     }
-                    else if (self.isCasting) {
+                    else if (self.isCasting || self.isAttacking) {
                         var offset = Math.floor(self.frame) % 8 * TW;
                         if (self.dir == 'right') {
-                            ctx.drawImage(sprite.mageatk, offset, 0, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(source, offset, 256, TW, TH, self.dx, self.dy, TW, TH);
                         }
                         if (self.dir == 'left') {
-                            ctx.drawImage(sprite.mageatk, offset, 128, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(source, offset, 384, TW, TH, self.dx, self.dy, TW, TH);
                         }
-                        self.frame += .1;
                     }
                     else if (self.spd == 0) {
                         if (self.dir == 'right') {
-                            ctx.drawImage(source, 0, sh, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(source, 0, 0, TW, TH, self.dx, self.dy, TW, TH);
                         }
                         if (self.dir == 'left') {
-                            ctx.drawImage(source, 512, sh, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(source, 0, 128, TW, TH, self.dx, self.dy, TW, TH);
                         }
                     }
-                    else {
+                    else if (self.spd > 0){
                         var sourceoffset = Math.floor(self.frame) % 4;
                         if (self.dir == 'right') {
                             sourceoffset = sourceoffset * TW;
@@ -197,11 +199,10 @@
                         }
                         if (self.dir == 'left') {
                             sourceoffset = sourceoffset * TW + TW * 4;
-                            ctx.drawImage(source, sourceoffset, sh, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(source, sourceoffset, 128, TW, TH, self.dx, self.dy, TW, TH);
                         }
-
-                        self.frame += .1;
                     }
+                    self.frame += .08;
 
                     //handles status impairments
                     if (self.status.slept > 0) {
@@ -261,6 +262,8 @@
                             p.hp = pack.hp;
                         if (p.isAlive !== undefined)
                             p.isAlive = pack.isAlive;
+                        if (p.isAttacking !== undefined)
+                            p.isAttacking = pack.isAttacking;
                     }
                 }
             });
@@ -275,8 +278,6 @@
                     return;
                 sprite.mage = new Image();
                 sprite.mage.src = '/client/sprites/mage.png';
-                sprite.mageatk = new Image();
-                sprite.mageatk.src = '/client/sprites/mageatk.png';
                 sprite.warrior = new Image();
                 sprite.warrior.src = '/client/sprites/warrior.png';
                 sprite.status = new Image();
@@ -552,7 +553,7 @@
                                 });
                             }
                         } else {
-                            chat.log('You must have a target to perform ' + Player.list[selfId].ability1 +'.', red);
+                            chat.log('You must have a target to perform [' + Player.list[selfId].ability1 +'].', red);
                         }
                     }
                 }
