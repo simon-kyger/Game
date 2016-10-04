@@ -18,8 +18,8 @@ const TH = 128;
 //player Class
 var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ability4, hpMAX) {
     var self = {
-        x: 128,
-        y: 128,
+        x: 1536,
+        y: 1024,
         id: id,
         movUp: false,
         movDown: false,
@@ -55,8 +55,9 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
         isAttacking: false,
     }
     self.updatePosition = function () {
-        if (self.status.slept > 0 || self.isAlive == false)
+        if (self.status.slept > 0 || self.isAlive == false) {
             return;
+        }
         if (self.movUp) {
             self.isCasting = false;
             self.spd = self.vel;
@@ -216,6 +217,9 @@ Player.onConnect = function (socket, name, pclass, realm) {
                 break;
             }
         }
+        if (caster.isAlive == false) { // this should also be handled on the client, or throttle the client so dead people don't spam the server
+            return;
+        }
         if (target.isAlive == false) {
             SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You cannot perform that ability on the dead.', 'orange');
             return;
@@ -309,7 +313,7 @@ function abilityHeal(target, caster, distance) {
 
 function abilitySlice(target, caster, distance) {
     var counter = 0;
-    var maxCounter = 2000;
+    var maxCounter = 1500;
     if (caster.status.slept) {
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You cannot cast while asleep!', 'orange');
         caster.isAttacking = false;
@@ -336,13 +340,13 @@ function abilitySlice(target, caster, distance) {
             counter += 50;
             if (counter >= maxCounter) {
                 caster.isAttacking = false;
-                slice(target);
+                slice(target, caster);
                 clearInterval(startCast);
             }
         }
     }, 50);
 
-    function slice(target) {        
+    function slice(target, caster) {        
         var dmg = Math.floor(Math.random() * 31) + 5; //between 5 and 35 
         //crit chance calced here;
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You sliced '+ target.name +' for ' + dmg + ' damage!', 'orange');
@@ -370,7 +374,6 @@ function abilitySlice(target, caster, distance) {
                 color = 'green';
             for (var i in SOCKET_CONNECTIONS) {
                 SOCKET_CONNECTIONS[i].emit('addToChat', target.name + ' was just killed in [undefined] by '+ caster.name +'.', color);
-                caster.isCasting = true;
             }
         }
     }
