@@ -17,7 +17,7 @@
                 <input type="radio" name="hero" value="Mage"> Mage<br>
                 <input type="radio" name="hero" value="Warrior"> Warrior<br>
                 <input type="radio" name="hero" value="Priest"> Priest<br>
-                <input type="radio" name="hero" value="Thief"> Thief<br>
+                <input type="radio" name="hero" value="Thief"> Thief - Not Done dont pick plz<br>
             </form>
             Choose Realm:
             <form id="realmselection" action="">
@@ -167,15 +167,17 @@
                     var sh = 0; //source height
                     if (self.pclass == 'Mage')
                         source = sprite.mage;
-                    else
+                    else if (self.pclass == 'Warrior')
                         source = sprite.warrior;
+                    else
+                        source = sprite.priest;
 
                     //handles movement
+                    var offset = (Math.floor(self.frame) % 8) * TW;
                     if (!self.isAlive) {
 
                     }
                     else if (self.isCasting || self.isAttacking) {
-                        var offset = Math.floor(self.frame) % 8 * TW;
                         if (self.dir == 'right') {
                             ctx.drawImage(source, offset, 256, TW, TH, self.dx, self.dy, TW, TH);
                         }
@@ -192,17 +194,14 @@
                         }
                     }
                     else if (self.spd > 0){
-                        var sourceoffset = Math.floor(self.frame) % 4;
                         if (self.dir == 'right') {
-                            sourceoffset = sourceoffset * TW;
-                            ctx.drawImage(source, sourceoffset, sh, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(source, offset, 0, TW, TH, self.dx, self.dy, TW, TH);
                         }
                         if (self.dir == 'left') {
-                            sourceoffset = sourceoffset * TW + TW * 4;
-                            ctx.drawImage(source, sourceoffset, 128, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(source, offset, 128, TW, TH, self.dx, self.dy, TW, TH);
                         }
                     }
-                    self.frame += .08;
+                    self.frame += .125;
 
                     //handles status impairments
                     if (self.status.slept > 0) {
@@ -280,6 +279,8 @@
                 sprite.mage.src = '/client/sprites/mage.png';
                 sprite.warrior = new Image();
                 sprite.warrior.src = '/client/sprites/warrior.png';
+                sprite.priest = new Image();
+                sprite.priest.src = '/client/sprites/priest.png';
                 sprite.status = new Image();
                 sprite.status.src = '/client/sprites/status.png';
                 sprite.grass1 = new Image();
@@ -543,10 +544,11 @@
                         });
                     } else if (e.keyCode === 81) { //q is pressed
                         if (Cursor.target) {
-                            if (Player.list[selfId].isCasting) {
+                            if (Player.list[selfId].isCasting || Player.list[selfId].isAttacking) {
                                 chat.log('You are already performing another ability!', lblue);
                                 return;
                             } else {
+                                Player.list[selfId].frame = 0;
                                 socket.emit('ability1', {
                                     self: Player.list[selfId],
                                     target: Cursor.target,
