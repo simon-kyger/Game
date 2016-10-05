@@ -48,7 +48,7 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
         ability2: ability2,
         ability3: ability3,
         ability4: ability4,
-        group: null,
+        group: {},
         hp: hpMAX,
         hpMAX: hpMAX,
         isAlive: true,
@@ -124,6 +124,7 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             hp: self.hp,
             hpMAX: self.hpMAX,
             isAlive: self.isAlive,
+            group: self.group,
         };
     }
     self.getUpdatePack = function () {
@@ -140,7 +141,8 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             group: null,
             hp: self.hp,
             hpMAX: self.hpMAX,
-            isAlive: self.isAlive, 
+            isAlive: self.isAlive,
+            group: self.group,
         };
     }
 
@@ -505,7 +507,27 @@ io.sockets.on('connection', function (socket) {
         for (var i in SOCKET_CONNECTIONS) {
             SOCKET_CONNECTIONS[i].emit('addToChat', message, color);
         }
-    });   
+    });
+    socket.on('command', function (casterid, msg) {
+        //format command from poststring
+        var command = msg.substr(0, 7);
+        var target = msg.substr(8);
+        if (command === '/invite') {
+            var vtarget; //a validator that this entity actually exists
+            for (var i in Player.list) {
+                if (Player.list[i].name === target) {
+                    vtarget = Player.list[i];
+                }
+            }
+            if (vtarget) {
+                SOCKET_CONNECTIONS[casterid].emit('addToChat', 'You invited ' + vtarget.name + ' to join your party.', 'green');
+                SOCKET_CONNECTIONS[vtarget.id].emit('addToChat', Player.list[casterid].name + ' invited you to join your party.', 'green');
+            } else {
+                SOCKET_CONNECTIONS[casterid].emit('addToChat', 'No known player [' + target + ']. Did you forget to capitalize a letter?');
+            }
+        } else
+            SOCKET_CONNECTIONS[casterid].emit('addToChat', 'No known command '+ msg);
+    });  
 });
 
 var map = [

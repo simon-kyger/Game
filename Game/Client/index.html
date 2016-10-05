@@ -2,6 +2,7 @@
 <html>
     <head>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
         <script src="client/js/requestanimationframe.js"></script>
         <link href="client/main.css" rel="stylesheet" />
@@ -47,7 +48,7 @@
                 <div id="playerPOS">PLAYERPOS:</div>
                 <div id="DCXDCY">DCX/DCY:</div>
             </div>
-            <div class="div-table">
+            <div id="playerinfo" class="div-table">
                 <div class="div-table-row">
                     <div id="PLAYERNAME" class="div-table-col">Player:</div>
                 </div>
@@ -73,6 +74,16 @@
                     <div id="TARGET"class="div-table-col">TARGET:</div>
                 </div>
             </div>
+            <div id="groupinfo" class="ui-widget-content">
+                <div>GroupMonitor</div>
+                <div>YOURNAMEGOESHERE</div>
+                <div>Group MemberA</div>
+                <div>Group MemberB</div>
+                <div>Group MemberC</div>
+                <div>Group MemberD</div>
+                <div>Group MemberE</div>
+                <div>Group MemberF</div>
+            </div>
         </div>
         <script>
 
@@ -83,6 +94,7 @@
             var HEIGHT = 144;
             var TW = 128;
             var TH = 128;
+            var abilitythrottle = false;
             var chat = $('#chat');
             var sprite = {};
             var loginbtn = $('#loginbtn');
@@ -92,6 +104,7 @@
 //SIGNIN
 
             $('#game').hide();
+            $('#groupinfo').hide();
             loginbtn.on("click", function () {
                 var username = $('#username').val();
                 var password = $('#password').val();
@@ -117,6 +130,11 @@
                     $('#signin').hide();
                     init();
                     $('#game').show();
+                    $('#chat').resizable();
+                    $('#chat').draggable();
+                    $('#playerinfo').resizable();
+                    $('#groupinfo').show();
+                    $("#groupinfo").draggable();
                 } else
                     alert("Invalid username/password.");
             });
@@ -265,7 +283,10 @@
                             p.isAlive = pack.isAlive;
                         if (p.isAttacking !== undefined)
                             p.isAttacking = pack.isAttacking;
-                    }
+                        if (p.group !== undefined)
+                            p.group = pack.group;
+                    } else
+                        delete Player.list[pack]; //this is a test to make sure that null players are dealt with. may need refinement.
                 }
             });
             socket.on('remove', function (data) {
@@ -322,8 +343,17 @@
                 // after hitting enter but allowing new lines using shift+enter
                 if (e.which == 13 && !e.shiftKey) {
                     e.preventDefault();
-                    var msg = chat.chatinput.val(); 
-                    // not empty / space
+                    var msg = chat.chatinput.val();
+
+                    //handle commands
+                    if (msg.substr(0, 1) == '/') {
+                        //handle player invitations
+                        socket.emit('command', selfId, msg);
+                        chat.chatinput[0].value = ''; // CLEAR TEXTAREA
+                        return;
+                    }
+                    
+                    //otherwise just post it to everyone
                     if ($.trim(msg)) {
                         socket.emit('chatMsg', Player.list[selfId].name+ ': '+msg, 'white');
                         chat.chatinput[0].value = ''; // CLEAR TEXTAREA
@@ -545,6 +575,10 @@
                             state: true
                         });
                     } else if (e.keyCode === 81) { //q is pressed
+                        if (abilitythrottle)
+                            return;
+                        abilitythrottle = true;
+                        setTimeout(function () { abilitythrottle = false; }, 200);
                         if (Cursor.target) {
                             if (Player.list[selfId].isCasting || Player.list[selfId].isAttacking) {
                                 chat.log('You are already performing another ability!', lblue);
@@ -603,9 +637,9 @@
                         var color = 'coral';
                         var currentselection = 'You target [' + Player.list[i].name + ']';
                         if (Player.list[i].realm === Player.list[selfId].realm) {
-                            message = 'You examine '+ Player.list[i].name + '. He is a member of the ' + Player.list[i].pclass+ ' class of your realm.';
+                            message = 'You examine '+ Player.list[i].name + '. They are a member of the ' + Player.list[i].pclass+ ' class of your realm.';
                         } else
-                            message = 'You examine '+ Player.list[i].name + '. He is a member of the enemy realm!';
+                            message = 'You examine '+ Player.list[i].name + '. They are a member of the enemy realm!';
                         chat.log(currentselection, color);
                         chat.log(message, color);
                         break;
