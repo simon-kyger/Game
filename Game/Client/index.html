@@ -87,6 +87,11 @@
                 <div>Group MemberE</div>
                 <div>Group MemberF</div>
             </div>
+            <div id="target" class="ui-widget-content">
+                <div id="targetresizer" class="ui-resizable-handle ui-resizable-ne"></div>
+                <div id="targettitle">Target:</div>
+                <div id='targethp'></div>
+            </div>
         </div>
         <script>
 
@@ -159,6 +164,14 @@
                         }
                     });
                     $("#groupinfo").draggable({
+                        containment: "#ctx"
+                    });
+                    $('#target').resizable({
+                        handles: {
+                            'ne': '#targetresizer'
+                        }
+                    });
+                    $("#target").draggable({
                         containment: "#ctx"
                     });
                 } else
@@ -541,7 +554,8 @@
                 //UI
                 $('#PLAYERNAME').html('NAME: ' +p.name);
                 $('#REALM').html('REALM: '+ p.realm);
-                if (p.target.name){
+                if (p.target.name) {
+                    $('#targethp').html(p.target.hp + '/' + p.target.hpMAX);
                     if (p.target.isAlive == true) {
                         $('#TARGET').html('TARGET: ' + p.target.name);
                     } else {
@@ -549,7 +563,9 @@
                     }                        
                 } else {
                     $('#TARGET').html('TARGET: ');
+                    $('#targethp').html('');
                 }
+                
                 $('#PCLASS').html('CLASS: ' + p.pclass);
                 $('#HP').html('HP: ' + p.hp + '/' + p.hpMAX);
                 //other updates

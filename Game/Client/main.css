@@ -145,7 +145,6 @@ canvas {
 }
 
 #groupinfo { 
-    font-family:Helvetica, Arial, sans-serif;
     position:absolute;
     bottom: 0;
     left: 30%;
@@ -159,7 +158,22 @@ canvas {
     font-size: 14px;
     margin-left: 4px;
 }
-#chatresizer, #groupresizer, #playerinforesizer {
+
+#target {
+    position:absolute;
+    bottom: 22%;
+    left: 40%;
+    width: 10%;
+    height: 3%;
+    color:#777;
+    overflow:hidden;
+    background-color: rgba(0,0,0,0.5);
+    color: white;
+    font-family: 'Lucida Console';
+    font-size: 14px;
+    margin-left: 4px;
+}
+#chatresizer, #groupresizer, #playerinforesizer, #targetresizer {
     width: 14px;
     height: 14px;
     background-color: #333333;
