@@ -292,6 +292,8 @@ function abilityHeal(target, caster, distance) {
     
     //cast has completed, apply effect to target
     function heal(target) {
+        if (!SOCKET_CONNECTIONS[caster.id] || !SOCKET_CONNECTIONS[target.id])
+            return;
         if (target.hp < 1) {
             SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your heal has failed!', 'orchid');
             return;
@@ -348,7 +350,9 @@ function abilitySlice(target, caster, distance) {
         }
     }, 50);
 
-    function slice(target, caster) {        
+    function slice(target, caster) {
+        if (!SOCKET_CONNECTIONS[caster.id] || !SOCKET_CONNECTIONS[target.id])
+            return;
         var dmg = Math.floor(Math.random() * 31) + 5; //between 5 and 35 
         //crit chance calced here;
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You sliced '+ target.name +' for ' + dmg + ' damage!', 'orange');
@@ -411,7 +415,7 @@ function abilitySleep(target, caster, distance) {
         } else {
             counter += 50;
             if (counter >= maxCounter) {
-                sleep(target);
+                sleep(target, caster);
                 caster.isCasting = false;
                 clearInterval(startCast);
             }
@@ -419,7 +423,9 @@ function abilitySleep(target, caster, distance) {
     }, 50);
     
     //cast has completed, apply effect to target
-    function sleep(target) {
+    function sleep(target, caster) {
+        if (!SOCKET_CONNECTIONS[caster.id] || !SOCKET_CONNECTIONS[target.id])
+            return;
         //mages are naturally immune, but let the spell cast go through anyway.
         if (target.pclass == 'Mage') {
             SOCKET_CONNECTIONS[caster.id].emit('addToChat', target.name + ' is immune to your spell!');
