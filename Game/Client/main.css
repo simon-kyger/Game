@@ -17,7 +17,7 @@ canvas {
 
 .chat{
     font-family:Helvetica, Arial, sans-serif;
-    position:absolute;
+    position:absolute !important;
     bottom: 0;
     width: 30%;
     height: 25%;
@@ -95,8 +95,9 @@ canvas {
 }
 
 ::-webkit-scrollbar {
-    width: 15px;
+    width: 5px;
     height: 15px;
+    left: 8px;
 }
 
 ::-webkit-scrollbar-button {
@@ -106,7 +107,7 @@ canvas {
 
 ::-webkit-scrollbar-thumb {
     background: #020202;
-    border: 36px none #080808;
+    border: 30px none #080808;
     border-radius: 0px;
 }
 
@@ -120,7 +121,7 @@ canvas {
 
 ::-webkit-scrollbar-track {
     background: #666666;
-    border: 32px none #000000;
+    border: 30px none #000000;
     border-radius: 0px;
 }
 
@@ -157,4 +158,13 @@ canvas {
     font-family: 'Lucida Console';
     font-size: 14px;
     margin-left: 4px;
+}
+#chatresizer, #groupresizer, #playerinforesizer {
+    width: 14px;
+    height: 14px;
+    background-color: #333333;
+    border: 1px solid #000000;
+    top: 0px;
+    right: 0px;
+    position: absolute !important;
 }
