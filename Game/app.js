@@ -53,6 +53,7 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
         hpMAX: hpMAX,
         isAlive: true,
         isAttacking: false,
+        target: '',
     }
     self.updatePosition = function () {
         if (self.status.slept > 0 || self.isAlive == false) {
@@ -125,6 +126,7 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             hpMAX: self.hpMAX,
             isAlive: self.isAlive,
             group: self.group,
+            target: self.target
         };
     }
     self.getUpdatePack = function () {
@@ -143,6 +145,7 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             hpMAX: self.hpMAX,
             isAlive: self.isAlive,
             group: self.group,
+            target: self.target
         };
     }
 
@@ -202,6 +205,30 @@ Player.onConnect = function (socket, name, pclass, realm) {
         }
     });
     
+    socket.on('target', function (data) {
+        var target, caster;
+        for (var i in Player.list) {
+            if (Player.list[i].id == data.target.id) {
+                target = data.target;
+            } else
+                Player.list[i].target = '';
+        }
+        for (var i in Player.list) {
+            if (Player.list[i].id == data.caster.id) {
+                caster = data.caster;
+            }
+        }
+        if (target && caster){
+            for (var i in Player.list) {
+                if (Player.list[i].id == caster.id) {
+                    Player.list[i].target = target;
+                    console.log(Player.list[i].target.name);
+                } else
+                    Player.list[i].target = '';
+            }
+        }
+    });
+    
     socket.on('ability1', function (data) {
         var caster;
         var type;
@@ -219,6 +246,8 @@ Player.onConnect = function (socket, name, pclass, realm) {
                 break;
             }
         }
+
+
         if (caster.isAlive == false) { // this should also be handled on the client, or throttle the client so dead people don't spam the server
             return;
         }
@@ -463,6 +492,11 @@ Player.onDisconnect = function (socket) {
     try {
         for (var i in SOCKET_CONNECTIONS) {
             SOCKET_CONNECTIONS[i].emit('addToChat', Player.list[socket.id].name + ' has disconnected.');
+        }
+        for (var i in Player.list) {
+            if (Player.list[i].target.name == Player.list[socket.id].name) {
+                Player.list[i].target = '';
+            }
         }
         delete Player.list[socket.id];
         removePack.player.push(socket.id);

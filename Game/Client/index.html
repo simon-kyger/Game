@@ -203,6 +203,7 @@
                     hp: init.hp,
                     hpMAX: init.hpMAX,
                     isAlive: init.isAlive,
+                    target: init.target,
                 }
                 self.draw = function () {
                     self.dx = self.x - Player.list[selfId].x + WIDTH / 2 - self.width/2;
@@ -311,6 +312,8 @@
                             p.isAttacking = pack.isAttacking;
                         if (p.group !== undefined)
                             p.group = pack.group;
+                        if (p.target !== undefined)
+                            p.target = pack.target;
                     } else
                         delete Player.list[pack]; //this is a test to make sure that null players are dealt with. may need refinement.
                 }
@@ -538,11 +541,11 @@
                 //UI
                 $('#PLAYERNAME').html('NAME: ' +p.name);
                 $('#REALM').html('REALM: '+ p.realm);
-                if (Cursor.target.name){
-                    if (Cursor.target.isAlive == true) {
-                        $('#TARGET').html('TARGET: ' + Cursor.target.name);
+                if (p.target.name){
+                    if (p.target.isAlive == true) {
+                        $('#TARGET').html('TARGET: ' + p.target.name);
                     } else {
-                        $('#TARGET').html('TARGET: ' + Cursor.target.name + '\'s corpse');
+                        $('#TARGET').html('TARGET: ' + p.target.name + '\'s corpse');
                     }                        
                 } else {
                     $('#TARGET').html('TARGET: ');
@@ -605,7 +608,7 @@
                             return;
                         abilitythrottle = true;
                         setTimeout(function () { abilitythrottle = false; }, 200);
-                        if (Cursor.target) {
+                        if (Player.list[selfId].target) {
                             if (Player.list[selfId].isCasting || Player.list[selfId].isAttacking) {
                                 chat.log('You are already performing another ability!', lblue);
                                 return;
@@ -613,7 +616,7 @@
                                 Player.list[selfId].frame = 0;
                                 socket.emit('ability1', {
                                     self: Player.list[selfId],
-                                    target: Cursor.target,
+                                    target: Player.list[selfId].target,
                                 });
                             }
                         } else {
@@ -658,7 +661,10 @@
                 var p = Player.list[selfId];
                 for (var i in Player.list) {
                     if (isCursorColliding(Cursor, Player.list[i])) {
-                        Cursor.target = Player.list[i];
+                        socket.emit('target', {
+                            caster: Player.list[selfId],
+                            target: Player.list[i],
+                        });
                         var message;
                         var color = 'coral';
                         var currentselection = 'You target [' + Player.list[i].name + ']';
@@ -670,7 +676,10 @@
                         chat.log(message, color);
                         break;
                     } else {
-                        Cursor.target = '';
+                        socket.emit('target', {
+                            caster: Player.list[selfId],
+                            target: ''
+                        });
                     }
                 }
             }
