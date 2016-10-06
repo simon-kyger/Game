@@ -272,18 +272,23 @@ function abilityHeal(target, caster, distance) {
     //preconditional tests against the cast are made here
     if (caster.status.slept) {
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You cannot cast while asleep!', 'orange');
+        caster.isCasting = false;
         return;
     }
     if (distance > 700) {
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your target is out of range', 'orange');
+        caster.isCasting = false;
         return;
     }
     if (target.hp < 1) {
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', target.name + ' is dead. You can\'t heal them.', 'orange');
+        caster.isCasting = false;
         return;
     }
     if (caster.interuptedby) {
-        SOCKET_CONNECTIONS[caster.id].emit('addToChat', caster.interuptedby +' is attacking you and prevented you from casting!', 'coral');
+        SOCKET_CONNECTIONS[caster.id].emit('addToChat', caster.interuptedby + ' is attacking you and prevented you from casting!', 'coral');
+        caster.isCasting = false;
+        return;
     }
     
     //begin the cast
@@ -293,13 +298,15 @@ function abilityHeal(target, caster, distance) {
     
     //during the cast
     var startCast = setInterval(function () {
-        if (caster.movUp || caster.movDown || caster.movLeft || caster.movRight || caster.interuptedby) {
+        if (caster.movUp || caster.movDown || caster.movLeft || caster.movRight || caster.interuptedby || caster.status.slept > 0) {
             SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your cast has been interupted!', '#8EE5EE');
             caster.isCasting = false;
             clearInterval(startCast);
         } else if (target.hp < 1) {
-            SOCKET_CONNECTIONS[caster.id].emit('addToChat', target.name+ ' is now longer a valid target to heal.', '#8EE5EE');
-        } else {
+            SOCKET_CONNECTIONS[caster.id].emit('addToChat', target.name + ' is now longer a valid target to heal.', '#8EE5EE');
+            caster.isCasting = false;
+        } 
+        else {
             counter += 50;
             if (counter >= maxCounter) {
                 heal(target);
@@ -337,7 +344,7 @@ function abilityHeal(target, caster, distance) {
 function abilitySlice(target, caster, distance) {
     var counter = 0;
     var maxCounter = 1500;
-    if (caster.status.slept) {
+    if (caster.status.slept > 0) {
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You cannot cast while asleep!', 'orange');
         caster.isAttacking = false;
         return;
@@ -408,16 +415,14 @@ function abilitySleep(target, caster, distance) {
     var counter = 0;
     var maxCounter = 2000;
     //preconditional tests against the cast are made here
-    if (caster.status.slept) {
-        SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You cannot cast while asleep!', 'orange');
-        return;
-    }
     if (distance > 700) {
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'Your target is out of range', 'orange');
+        caster.isCasting = false;
         return;
     }
     if (caster.interuptedby) {
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', caster.interuptedby + ' is attacking you and prevented you from casting!', 'coral');
+        caster.isCasting = false;
     }
     
     //begin the cast
@@ -455,7 +460,6 @@ function abilitySleep(target, caster, distance) {
             SOCKET_CONNECTIONS[i].emit('addToChat', target.name + ' has been slept.', 'orchid');
         }
         target.status.slept += 1;
-        console.log(target.status);
         target.isCasting = false;
         target.interuptedby = caster.name;
         setTimeout(function () {
