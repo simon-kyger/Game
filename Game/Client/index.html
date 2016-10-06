@@ -331,12 +331,11 @@
                         if (p.targethp !== undefined)
                             p.targethp = pack.targethp;
                     } else
-                        delete Player.list[pack]; //this is a test to make sure that null players are dealt with. may need refinement.
+                        delete Player.list[data.player[i]]; //this is a test to make sure that null players are dealt with. may need refinement.
                 }
             });
             socket.on('remove', function (data) {
-                for (var i = 0; i < data.player.length; i++)
-                    delete Player.list[data.player[i]];
+                delete Player.list[data];
             });
 
 //IMAGE LOADER
@@ -446,6 +445,9 @@
                     for (var k = 0; k < p.map[0].length; k++) {
                         var x = (k * TW - p.x) + (WIDTH / 2);
                         var y = (j * TH - p.y) + (HEIGHT / 2);
+                        //this should theoretically reduce draw calls based upon your resolution
+                        if (Math.abs(x) > WIDTH || Math.abs(y) > HEIGHT)
+                            continue;
                         if (p.map[j][k] == 0)
                             ctx.drawImage(sprite.grass1, x, y);
                         if (p.map[j][k] == 1)
@@ -459,6 +461,8 @@
                     for (var k = 0; k < p.mapOverlay[0].length; k++) {
                         var x = (k * TW - p.x) + (WIDTH / 2);
                         var y = (j * TH - p.y) + (HEIGHT / 2);
+                        if (Math.abs(x) > WIDTH || Math.abs(y) > HEIGHT)
+                            continue;
                         if (p.mapOverlay[j][k] == 1)
                             ctx.drawImage(sprite.shrub1,x, y);
                         if (p.mapOverlay[j][k] == 2)
@@ -490,33 +494,22 @@
 
                 // Make it black
                 shadowCtx.fillStyle = '#000';
-                shadowCtx.fillRect(0, 0, shadowCanvas.width, shadowCanvas.height);
-
-                // Turn canvas into mask
-                shadowCtx.globalCompositeOperation = "destination-out";
 
                 // Light Source on player
-                var x = WIDTH/2;
-                var y = HEIGHT/2;
-
-                x = x | 0;
-                y = y | 0;
-
-                gradient = shadowCtx.createRadialGradient(x, y, 128, x, y, 1);
-                gradient.addColorStop(0, "rgba(255, 255, 0, .1)");
-                gradient.addColorStop(1, "rgba(255, 255, 0, 1.0)");
-                shadowCtx.fillStyle = gradient;
-                shadowCtx.fillRect(0, 0, WIDTH, HEIGHT);
+                var p = Player.list[selfId];
+                //for (var i = 0; i < p.map[0].length; i++) {
+                //    for (var j = 0; j < p.map.length; j++) {
+                //        shadowCtx.fillStyle = 'rgba(' + Math.floor(255 - 42.5 * i) + ',' +
+                //                        Math.floor(255 - 42.5 * j) + ',0,.5)';
+                //        shadowCtx.fillRect(i * TW, j * TH, TW, TH);
+                //    }
+                //}
             }
 
             function drawForeground() {
 
             }
 
-            function prerender() {
-                drawLighting();
-                drawForeground();
-            }
 
             function render() {
                 //REQUIRED
@@ -533,7 +526,7 @@
                 drawMap();
                 drawMapOverlay();
                 drawPlayers();
-
+                drawLighting();
 
                 //prerendered stuff goes here:
                 var shadowCanvas = document.getElementById("ctx2");
@@ -747,7 +740,6 @@
 //MAIN
 
             function init() {
-                prerender();
                 var previoustime = Date.now();
                 var frames = 0;
                 function main(time) {

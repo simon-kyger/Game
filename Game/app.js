@@ -18,8 +18,8 @@ const TH = 128;
 //player Class
 var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ability4, hpMAX) {
     var self = {
-        x: 1536,
-        y: 1024,
+        x: 128,
+        y: 128,
         id: id,
         movUp: false,
         movDown: false,
@@ -482,24 +482,7 @@ Player.getAllInitPack = function () {
         players.push(Player.list[i].getInitPack());
     return players;
 }
-Player.onDisconnect = function (socket) {
-    try {
-        for (var i in SOCKET_CONNECTIONS) {
-            SOCKET_CONNECTIONS[i].emit('addToChat', Player.list[socket.id].name + ' has disconnected.');
-        }
-        for (var i in Player.list) {
-            if (Player.list[i].target.name == Player.list[socket.id].name) {
-                Player.list[i].target = '';
-            }
-        }
-        delete Player.list[socket.id];
-        removePack.player.push(socket.id);
-    } catch (e) {
-        //Basically this block of code gets called if the server is taken down, but a player still keeps his session alive
-        //and then if the server is brought back online, and the player disconnects, this exception is triggered.
-        //for now we will silently fail because there is nothing we want to broadcast to the server anyway.
-    }
-}
+
 Player.update = function () {
     //this should be modified based upon distance for performance reasons.
     var data = [];
@@ -533,15 +516,25 @@ io.sockets.on('connection', function (socket) {
     });   
 
     socket.on('disconnect', function () {
-        Player.onDisconnect(socket);
         delete SOCKET_CONNECTIONS[socket.id];
+        for (var i in SOCKET_CONNECTIONS) {
+            SOCKET_CONNECTIONS[i].emit('remove', socket.id);
+            SOCKET_CONNECTIONS[i].emit('addToChat', Player.list[socket.id].name + ' has disconnected.');
+        }
+        for (var i in Player.list) {
+            if (Player.list[i].target.name == Player.list[socket.id].name)
+                Player.list[i].target = '';
+        }
+        delete Player.list[socket.id];
     });
+
     socket.on('chatMsg', function (message, color) {
         var playerid = ("" + socket.id);
         for (var i in SOCKET_CONNECTIONS) {
             SOCKET_CONNECTIONS[i].emit('addToChat', message, color);
         }
     });
+
     socket.on('command', function (casterid, msg) {
         //format command from poststring
         var command = msg.substr(0, 7);
@@ -614,7 +607,6 @@ var mapOverlay = [
 ];
 
 var initPack = {};
-var removePack = {};
 
 setInterval(function () {
     var pack = {
@@ -624,8 +616,6 @@ setInterval(function () {
         var socket = SOCKET_CONNECTIONS[i];
         socket.emit('init', initPack);
         socket.emit('update', pack);
-        socket.emit('remove', removePack);
     }
     initPack.player = [];
-    removePack.player = [];
 }, 50); //20 times per second
