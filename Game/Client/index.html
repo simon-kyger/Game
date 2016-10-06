@@ -217,6 +217,7 @@
                     hpMAX: init.hpMAX,
                     isAlive: init.isAlive,
                     target: init.target,
+                    targethp: init.targethp,
                 }
                 self.draw = function () {
                     self.dx = self.x - Player.list[selfId].x + WIDTH / 2 - self.width/2;
@@ -285,7 +286,7 @@
                     ctx.fillRect(this.x, this.y, this.width, this.height);
                 }
             };
-            Cursor.target = {};
+
 
 //SERVERSIDE UPDATE
             socket.on('init', function (data) {
@@ -327,6 +328,8 @@
                             p.group = pack.group;
                         if (p.target !== undefined)
                             p.target = pack.target;
+                        if (p.targethp !== undefined)
+                            p.targethp = pack.targethp;
                     } else
                         delete Player.list[pack]; //this is a test to make sure that null players are dealt with. may need refinement.
                 }
@@ -554,8 +557,8 @@
                 //UI
                 $('#PLAYERNAME').html('NAME: ' +p.name);
                 $('#REALM').html('REALM: '+ p.realm);
-                if (p.target.name) {
-                    $('#targethp').html(p.target.hp + '/' + p.target.hpMAX);
+                if (p.target) {
+                    $('#targethp').html(p.targethp + '/' + p.target.hpMAX);
                     if (p.target.isAlive == true) {
                         $('#TARGET').html('TARGET: ' + p.target.name);
                     } else {
@@ -678,7 +681,6 @@
                 for (var i in Player.list) {
                     if (isCursorColliding(Cursor, Player.list[i])) {
                         socket.emit('target', {
-                            caster: Player.list[selfId],
                             target: Player.list[i],
                         });
                         var message;
@@ -693,7 +695,6 @@
                         break;
                     } else {
                         socket.emit('target', {
-                            caster: Player.list[selfId],
                             target: ''
                         });
                     }

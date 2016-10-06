@@ -54,10 +54,18 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
         isAlive: true,
         isAttacking: false,
         target: '',
+        targethp: '',
     }
     self.updatePosition = function () {
         if (self.status.slept > 0 || self.isAlive == false) {
             return;
+        }
+        if (self.target) {
+            for (var i in Player.list) {
+                if (self.target.id == Player.list[i].id) {
+                    self.targethp = Player.list[i].hp;
+                }
+            }
         }
         if (self.movUp) {
             self.isCasting = false;
@@ -126,7 +134,8 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             hpMAX: self.hpMAX,
             isAlive: self.isAlive,
             group: self.group,
-            target: self.target
+            target: self.target,
+            targethp: self.targethp
         };
     }
     self.getUpdatePack = function () {
@@ -145,7 +154,8 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             hpMAX: self.hpMAX,
             isAlive: self.isAlive,
             group: self.group,
-            target: self.target
+            target: self.target,
+            targethp: self.targethp
         };
     }
 
@@ -206,27 +216,7 @@ Player.onConnect = function (socket, name, pclass, realm) {
     });
     
     socket.on('target', function (data) {
-        var target, caster;
-        for (var i in Player.list) {
-            if (Player.list[i].id == data.target.id) {
-                target = data.target;
-            } else
-                Player.list[i].target = '';
-        }
-        for (var i in Player.list) {
-            if (Player.list[i].id == data.caster.id) {
-                caster = data.caster;
-            }
-        }
-        if (target && caster){
-            for (var i in Player.list) {
-                if (Player.list[i].id == caster.id) {
-                    Player.list[i].target = target;
-                    console.log(Player.list[i].target.name);
-                } else
-                    Player.list[i].target = '';
-            }
-        }
+        player.target = data.target;
     });
     
     socket.on('ability1', function (data) {
