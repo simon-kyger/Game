@@ -330,8 +330,7 @@
                             p.target = pack.target;
                         if (p.targethp !== undefined)
                             p.targethp = pack.targethp;
-                    } else
-                        delete Player.list[data.player[i]]; //this is a test to make sure that null players are dealt with. may need refinement.
+                    }
                 }
             });
             socket.on('remove', function (data) {
@@ -495,15 +494,24 @@
                 // Make it black
                 shadowCtx.fillStyle = '#000';
 
+                var width = window.innerWidth / TW;
+                var height = window.innerHeight / TH;
                 // Light Source on player
                 var p = Player.list[selfId];
-                //for (var i = 0; i < p.map[0].length; i++) {
-                //    for (var j = 0; j < p.map.length; j++) {
-                //        shadowCtx.fillStyle = 'rgba(' + Math.floor(255 - 42.5 * i) + ',' +
-                //                        Math.floor(255 - 42.5 * j) + ',0,.5)';
-                //        shadowCtx.fillRect(i * TW, j * TH, TW, TH);
-                //    }
-                //}
+                for (var k = 0; k < p.map[0].length; k++) {
+                    for (var j = 0; j < p.map.length; j++) {
+                        var x = (k * TW - p.x) + (WIDTH / 2);
+                        var y = (j * TH - p.y) + (HEIGHT / 2);
+                        var xdif = p.dx - x;
+                        var ydif = p.dy - y;
+                        var distance = Math.sqrt((xdif * xdif) + (ydif * ydif));
+                        
+                        var opacity = distance / (WIDTH/2.5);
+
+                        shadowCtx.fillStyle = 'rgba(0,0,0,' + opacity + ')';
+                        shadowCtx.fillRect(x, y, TW, TH);
+                    }
+                }
             }
 
             function drawForeground() {

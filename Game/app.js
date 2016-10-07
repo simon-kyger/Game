@@ -18,8 +18,8 @@ const TH = 128;
 //player Class
 var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ability4, hpMAX) {
     var self = {
-        x: 128,
-        y: 128,
+        x: 1000,
+        y: 500,
         id: id,
         movUp: false,
         movDown: false,
@@ -508,6 +508,7 @@ io.sockets.on('connection', function (socket) {
         var realm = data.realm.toString().replace(/\r?\n$/, '');
         var username = data.username.toString().replace(/\r?\n$/, '');
         // more validation needs to be done here
+        // as well as signin stuff
         if (data.username && data.password) {
             Player.onConnect(socket, username, pclass, realm);
             socket.emit('loginresponse', { success: true });
