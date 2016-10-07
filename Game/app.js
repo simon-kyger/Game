@@ -517,16 +517,27 @@ io.sockets.on('connection', function (socket) {
     });   
 
     socket.on('disconnect', function () {
-        delete SOCKET_CONNECTIONS[socket.id];
-        for (var i in SOCKET_CONNECTIONS) {
-            SOCKET_CONNECTIONS[i].emit('remove', socket.id);
-            SOCKET_CONNECTIONS[i].emit('addToChat', Player.list[socket.id].name + ' has disconnected.');
+        try {
+            delete SOCKET_CONNECTIONS[socket.id];
+            for (var i in SOCKET_CONNECTIONS) {
+                SOCKET_CONNECTIONS[i].emit('remove', socket.id);
+                SOCKET_CONNECTIONS[i].emit('addToChat', Player.list[socket.id].name + ' has disconnected.');
+            }
+            for (var i in Player.list) {
+                if (Player.list[i].target.name == Player.list[socket.id].name)
+                    Player.list[i].target = '';
+            }
+            delete Player.list[socket.id];
+        } catch (e) {
+            console.log(e);
+            //the reason for this trycatch is as follows:
+            //1: Server is brought online
+            //2: A client connects
+            //3: Server is taken down for whatever reason
+            //4: Server is brought back online
+            //5: Client that connected on step 2 attempts to disconnect after the server reboot.
+            //6: This exception then gets called, and because socket.id doesn't exist in server memory, everything in here fails.
         }
-        for (var i in Player.list) {
-            if (Player.list[i].target.name == Player.list[socket.id].name)
-                Player.list[i].target = '';
-        }
-        delete Player.list[socket.id];
     });
 
     socket.on('chatMsg', function (message, color) {
