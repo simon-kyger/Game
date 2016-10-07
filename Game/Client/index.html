@@ -502,6 +502,8 @@
                     for (var j = 0; j < p.map.length; j++) {
                         var x = (k * TW - p.x) + (WIDTH / 2);
                         var y = (j * TH - p.y) + (HEIGHT / 2);
+                        if (Math.abs(x) > WIDTH || Math.abs(y) > HEIGHT)
+                            continue;
                         var xdif = p.dx - x;
                         var ydif = p.dy - y;
                         var distance = Math.sqrt((xdif * xdif) + (ydif * ydif));
