@@ -55,6 +55,7 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
         isAttacking: false,
         target: '',
         targethp: '',
+        gcd: false,
     }
     self.updatePosition = function () {
         if (self.status.slept > 0 || self.isAlive == false) {
@@ -135,7 +136,8 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             isAlive: self.isAlive,
             group: self.group,
             target: self.target,
-            targethp: self.targethp
+            targethp: self.targethp,
+            gcd: self.gcd,
         };
     }
     self.getUpdatePack = function () {
@@ -155,7 +157,7 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             isAlive: self.isAlive,
             group: self.group,
             target: self.target,
-            targethp: self.targethp
+            targethp: self.targethp,
         };
     }
 
@@ -223,6 +225,8 @@ Player.onConnect = function (socket, name, pclass, realm) {
         var caster;
         var type;
         var target;
+        
+        //verify caster
         for (var i in Player.list) {
             if (Player.list[i].id == data.self.id) {
                 caster = Player.list[i];
@@ -230,25 +234,40 @@ Player.onConnect = function (socket, name, pclass, realm) {
                 break;
             }
         }
+        
+        //gcd for caster
+        if (caster.gcd)
+            return;
+        caster.gcd = true;
+        setTimeout(function () { caster.gcd = false; }, 200);
+        
+        //state checks of caster
+        if (caster.isCasting || caster.isAttacking || caster.isAlive == false) {
+            return;
+        }
+        
+        //verify target
         for (var i in Player.list) {
             if (Player.list[i].id == data.target.id) {
                 target = Player.list[i];
                 break;
             }
         }
-
-
-        if (caster.isAlive == false) { // this should also be handled on the client, or throttle the client so dead people don't spam the server
+        if (!target)
             return;
-        }
+       
+        //state checks of target
         if (target.isAlive == false) {
             SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You cannot perform that ability on the dead.', 'orange');
             return;
         }
+        
+        //manage initialization of variables concerning caster and target
+        caster.frame = 0;
         var xdif = caster.x - target.x;
         var ydif = caster.y - target.y;
         var distance = Math.sqrt((xdif * xdif) + (ydif * ydif));
-        //console.log('distance: ' +distance);
+
         if (type == 'sleep') {
             caster.isCasting = true;
             abilitySleep(target, caster, distance);

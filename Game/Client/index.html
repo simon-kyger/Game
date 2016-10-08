@@ -102,7 +102,6 @@
             var HEIGHT = 144;
             var TW = 128;
             var TH = 128;
-            var abilitythrottle = false;
             var chat = $('#chat');
             var sprite = {};
             var loginbtn = $('#loginbtn');
@@ -218,6 +217,7 @@
                     isAlive: init.isAlive,
                     target: init.target,
                     targethp: init.targethp,
+                    gcd: init.gcd,
                 }
                 self.draw = function () {
                     self.dx = self.x - Player.list[selfId].x + WIDTH / 2 - self.width/2;
@@ -626,21 +626,11 @@
                             state: true
                         });
                     } else if (e.keyCode === 81) { //q is pressed
-                        if (abilitythrottle)
-                            return;
-                        abilitythrottle = true;
-                        setTimeout(function () { abilitythrottle = false; }, 200);
                         if (Player.list[selfId].target) {
-                            if (Player.list[selfId].isCasting || Player.list[selfId].isAttacking) {
-                                chat.log('You are already performing another ability!', lblue);
-                                return;
-                            } else {
-                                Player.list[selfId].frame = 0;
-                                socket.emit('ability1', {
-                                    self: Player.list[selfId],
-                                    target: Player.list[selfId].target,
-                                });
-                            }
+                            socket.emit('ability1', {
+                                self: Player.list[selfId],
+                                target: Player.list[selfId].target,
+                            });
                         } else {
                             chat.log('You must have a target to perform [' + Player.list[selfId].ability1 +'].', red);
                         }
