@@ -58,6 +58,10 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
         gcd: false,
     }
     self.updatePosition = function () {
+        if (self.frame > 8)
+            self.frame = 0
+        else
+            self.frame += .2;
         if (self.status.slept > 0 || self.isAlive == false) {
             return;
         }
@@ -91,8 +95,9 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             self.dir = 'right';
         }
         //required for animation stop
-        if (!self.movRight && !self.movLeft && !self.movDown && !self.movUp)
+        if (!self.movRight && !self.movLeft && !self.movDown && !self.movUp) {
             self.spd = 0;
+        }
         //map absolute boundaries
         if (self.x < self.width)
             self.x = self.width;
@@ -323,7 +328,6 @@ function abilityHeal(target, caster, distance) {
         } 
         else {
             counter += 50;
-            caster.frame += .2;
             if (counter >= maxCounter) {
                 heal(target);
                 caster.isCasting = false;
@@ -385,7 +389,7 @@ function abilitySlice(target, caster, distance) {
             clearInterval(startCast);
         } else {
             counter += 100; //attack delay before end of cast
-            caster.frame += .4;
+            caster.frame += .2;
             if (counter >= maxCounter) {
                 caster.isAttacking = false;
                 slice(target, caster);
@@ -457,7 +461,6 @@ function abilitySleep(target, caster, distance) {
             clearInterval(startCast);
         } else {
             counter += 50;
-            caster.frame += .2;
             if (counter >= maxCounter) {
                 sleep(target, caster);
                 caster.isCasting = false;

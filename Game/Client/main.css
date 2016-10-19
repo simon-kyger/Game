@@ -182,13 +182,3 @@ canvas {
     right: 0px;
     position: absolute !important;
 }
-
-#chatresizer, #groupresizer, #playerinforesizer, #targetresizer {
-    width: 14px;
-    height: 14px;
-    background-color: #333333;
-    border: 1px solid #000000;
-    top: 0px;
-    right: 0px;
-    position: absolute !important;
-}
