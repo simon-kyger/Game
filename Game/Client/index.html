@@ -48,6 +48,7 @@
                 <div id="mouse">MOUSEPOS:</div>
                 <div id="playerPOS">PLAYERPOS:</div>
                 <div id="DCXDCY">DCX/DCY:</div>
+                <div id="FRAME">FRAME:</div>
             </div>
             <div id="playerinfo" class="div-table">
                 <div id="playerinforesizer" class="ui-resizable-handle ui-resizable-ne"></div>
@@ -98,8 +99,8 @@
 //INIT & GLOBALS
             var socket = io();
             var selfId;
-            var WIDTH = 1920;
-            var HEIGHT = 1080;
+            var WIDTH = 256;
+            var HEIGHT = 144;
             var TW = 128;
             var TH = 128;
             var chat = $('#chat');
@@ -234,16 +235,16 @@
                         source = sprite.priest;
 
                     //handles movement
-                    var offset = (Math.floor(self.frame) % 8) * TW;
+                    var offset = (Math.floor(self.frame) % 8);
                     if (!self.isAlive) {
 
                     }
                     else if (self.isCasting || self.isAttacking) {
                         if (self.dir == 'right') {
-                            ctx.drawImage(source, offset, 256, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(source, offset*TW, 256, TW, TH, self.dx, self.dy, TW, TH);
                         }
                         if (self.dir == 'left') {
-                            ctx.drawImage(source, offset, 384, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(source, offset*TW, 384, TW, TH, self.dx, self.dy, TW, TH);
                         }
                     }
                     else if (self.spd == 0) {
@@ -256,13 +257,12 @@
                     }
                     else if (self.spd > 0){
                         if (self.dir == 'right') {
-                            ctx.drawImage(source, offset, 0, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(source, offset*TW, 0, TW, TH, self.dx, self.dy, TW, TH);
                         }
                         if (self.dir == 'left') {
-                            ctx.drawImage(source, offset, 128, TW, TH, self.dx, self.dy, TW, TH);
+                            ctx.drawImage(source, offset*TW, 128, TW, TH, self.dx, self.dy, TW, TH);
                         }
                     }
-                    self.frame += .125;
 
                     //handles status impairments
                     if (self.status.slept > 0) {
@@ -330,6 +330,8 @@
                             p.target = pack.target;
                         if (p.targethp !== undefined)
                             p.targethp = pack.targethp;
+                        if (p.frame !== undefined)
+                            p.frame = pack.frame;
                     }
                 }
             });
@@ -571,6 +573,7 @@
                     $('#TARGET').html('TARGET: ');
                     $('#targethp').html('');
                 }
+                $('#FRAME').html('FRAME: ' + p.frame);
                 
                 $('#PCLASS').html('CLASS: ' + p.pclass);
                 $('#HP').html('HP: ' + p.hp + '/' + p.hpMAX);

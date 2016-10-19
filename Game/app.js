@@ -158,6 +158,7 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             group: self.group,
             target: self.target,
             targethp: self.targethp,
+            frame: self.frame,
         };
     }
 
@@ -222,29 +223,11 @@ Player.onConnect = function (socket, name, pclass, realm) {
     });
     
     socket.on('ability1', function (data) {
-        var caster;
         var type;
         var target;
         
         //verify caster
-        for (var i in Player.list) {
-            if (Player.list[i].id == data.self.id) {
-                caster = Player.list[i];
-                type = Player.list[i].ability1;
-                break;
-            }
-        }
-        
-        //gcd for caster
-        if (caster.gcd)
-            return;
-        caster.gcd = true;
-        setTimeout(function () { caster.gcd = false; }, 200);
-        
-        //state checks of caster
-        if (caster.isCasting || caster.isAttacking || caster.isAlive == false) {
-            return;
-        }
+        type = player.ability1;
         
         //verify target
         for (var i in Player.list) {
@@ -253,30 +236,41 @@ Player.onConnect = function (socket, name, pclass, realm) {
                 break;
             }
         }
-        if (!target)
+        
+        if (!player || !target)
             return;
+        
+        //gcd for caster
+        if (player.gcd)
+            return;
+        player.gcd = true;
+        setTimeout(function () { player.gcd = false; }, 200);
+        
+        //state checks of caster
+        if (player.isCasting || player.isAttacking || player.isAlive == false) {
+            return;
+        }
        
         //state checks of target
         if (target.isAlive == false) {
-            SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You cannot perform that ability on the dead.', 'orange');
+            SOCKET_CONNECTIONS[player.id].emit('addToChat', 'You cannot perform that ability on the dead.', 'orange');
             return;
         }
         
         //manage initialization of variables concerning caster and target
-        caster.frame = 0;
-        var xdif = caster.x - target.x;
-        var ydif = caster.y - target.y;
+        var xdif = player.x - target.x;
+        var ydif = player.y - target.y;
         var distance = Math.sqrt((xdif * xdif) + (ydif * ydif));
 
         if (type == 'sleep') {
-            caster.isCasting = true;
-            abilitySleep(target, caster, distance);
+            player.isCasting = true;
+            abilitySleep(target, player, distance);
         } else if (type == 'slice') {
-            caster.isAttacking = true;
-            abilitySlice(target, caster, distance);
+            player.isAttacking = true;
+            abilitySlice(target, player, distance);
         } else if (type == 'heal') {
-            caster.isCasting = true;
-            abilityHeal(target, caster, distance);
+            player.isCasting = true;
+            abilityHeal(target, player, distance);
         }
     });
 
@@ -315,6 +309,8 @@ function abilityHeal(target, caster, distance) {
         SOCKET_CONNECTIONS[i].emit('addToChat', caster.name + ' begins casting a spell.', '#4c4cff');
     }
     
+    caster.frame = 0;
+
     //during the cast
     var startCast = setInterval(function () {
         if (caster.movUp || caster.movDown || caster.movLeft || caster.movRight || caster.interuptedby || caster.status.slept > 0) {
@@ -327,6 +323,7 @@ function abilityHeal(target, caster, distance) {
         } 
         else {
             counter += 50;
+            caster.frame += .2;
             if (counter >= maxCounter) {
                 heal(target);
                 caster.isCasting = false;
@@ -361,8 +358,8 @@ function abilityHeal(target, caster, distance) {
 }
 
 function abilitySlice(target, caster, distance) {
-    var counter = 0;
-    var maxCounter = 1500;
+    var counter = 0; //attack speed incrementer 
+    var maxCounter = 2000;
     if (caster.status.slept > 0) {
         SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You cannot cast while asleep!', 'orange');
         caster.isAttacking = false;
@@ -375,6 +372,7 @@ function abilitySlice(target, caster, distance) {
     }
     //begin attack
     SOCKET_CONNECTIONS[caster.id].emit('addToChat', 'You prepare to perform slice on '+ target.name + '.', '#4c4cff');
+    caster.frame = 0;
     //during the cast
     var startCast = setInterval(function () {
         if (distance > TW) {
@@ -386,7 +384,8 @@ function abilitySlice(target, caster, distance) {
             caster.isAttacking = false;
             clearInterval(startCast);
         } else {
-            counter += 50;
+            counter += 100; //attack delay before end of cast
+            caster.frame += .4;
             if (counter >= maxCounter) {
                 caster.isAttacking = false;
                 slice(target, caster);
@@ -448,6 +447,7 @@ function abilitySleep(target, caster, distance) {
     for (var i in SOCKET_CONNECTIONS) {
         SOCKET_CONNECTIONS[i].emit('addToChat', caster.name + ' begins casting a spell.', '#4c4cff');
     }
+    caster.frame = 0;
     
     //during the cast
     var startCast = setInterval(function () {
@@ -457,6 +457,7 @@ function abilitySleep(target, caster, distance) {
             clearInterval(startCast);
         } else {
             counter += 50;
+            caster.frame += .2;
             if (counter >= maxCounter) {
                 sleep(target, caster);
                 caster.isCasting = false;
