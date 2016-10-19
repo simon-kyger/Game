@@ -589,6 +589,55 @@
             }
 
 //EVENTS
+            socket.on('groupInvite', function (data) {
+                if (document.getElementById("groupInvite")) {
+                    return;
+                }
+                var div = document.createElement("div");
+                div.id = "groupInvite";
+                div.className = 'chat ui-resizable ui-draggable ui-draggable-handle'; //give it the style of our chat window ui
+                div.style.bottom = Player.list[selfId].dy + 'px';
+                div.style.left = Player.list[selfId].dx + 'px';
+                div.style.width = "300px";
+                div.style.height = "100px";
+                div.innerHTML = '<div id="groupInviteResizer" class="resizer ui-resizable-handle ui-resizable-ne"></div>' +
+                                data.name + " invited you to join a party." + '<br>' +
+                                'Will you accept?' + '<br>' +
+                                '<div><div id="acceptGroupInvite" style="width:50%; position: absolute; bottom:0px;">Accept</div><div id="declineGroupInvite" style="width:50%; position: absolute; bottom:0px; left:50%;">Decline</div></div>'
+                ;
+                document.getElementById("game").appendChild(div);
+                $('#groupInvite').resizable({
+                    handles: {
+                        'ne': '#groupInviteResizer'
+                    }
+                });
+                $('#groupInvite').draggable({
+                    containment: "#ctx"
+                });
+                acceptGroupInvite.onmouseover = function (e) {
+                    $(this).css('cursor', 'default'); //can change cursor to a pointer style here instead of default if you wish
+                    this.style.backgroundColor = '#a8a8a8';
+                };
+                acceptGroupInvite.onmouseout = function () {
+                    this.style.backgroundColor = '';
+                };
+                declineGroupInvite.onmouseover = function () {
+                    $(this).css('cursor', 'default');
+                    this.style.backgroundColor = '#a8a8a8';
+                };
+                declineGroupInvite.onmouseout = function () {
+                    this.style.backgroundColor = '';
+                };
+
+                acceptGroupInvite.onclick = function () {
+                    //handle group success here...
+                };
+                declineGroupInvite.onclick = function () {
+                    var element = document.getElementById("groupInvite");
+                    element.parentNode.removeChild(element);
+                };
+
+            });
             window.addEventListener('keydown', keyinputhandler, false);
             window.addEventListener('keyup', keyinputhandler, false);
             function keyinputhandler(e) {

@@ -581,6 +581,7 @@ io.sockets.on('connection', function (socket) {
             if (vtarget) {
                 SOCKET_CONNECTIONS[casterid].emit('addToChat', 'You invited ' + vtarget.name + ' to join your party.', 'green');
                 SOCKET_CONNECTIONS[vtarget.id].emit('addToChat', Player.list[casterid].name + ' invited you to join your party.', 'green');
+                SOCKET_CONNECTIONS[vtarget.id].emit('groupInvite', Player.list[casterid]);
             } else {
                 SOCKET_CONNECTIONS[casterid].emit('addToChat', 'No known player [' + target + ']. Did you forget to capitalize a letter?');
             }

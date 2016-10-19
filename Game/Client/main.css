@@ -16,7 +16,6 @@ canvas {
 }
 
 .chat{
-    font-family:Helvetica, Arial, sans-serif;
     position:absolute !important;
     bottom: 0;
     width: 30%;
@@ -173,6 +172,17 @@ canvas {
     font-size: 14px;
     margin-left: 4px;
 }
+
+.resizer {
+    width: 14px;
+    height: 14px;
+    background-color: #333333;
+    border: 1px solid #000000;
+    top: 0px;
+    right: 0px;
+    position: absolute !important;
+}
+
 #chatresizer, #groupresizer, #playerinforesizer, #targetresizer {
     width: 14px;
     height: 14px;
