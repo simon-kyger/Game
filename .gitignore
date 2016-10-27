@@ -243,3 +243,8 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+/Game/typings/globals/node/index.d.ts
+/Game/typings/globals/node/typings.json
+/Game/typings/globals/socket.io/index.d.ts
+/Game/typings/globals/socket.io/typings.json
+/Game/typings/index.d.ts
