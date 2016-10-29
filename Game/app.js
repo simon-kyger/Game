@@ -48,7 +48,11 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
         ability2: ability2,
         ability3: ability3,
         ability4: ability4,
-        group: {},
+        isGrouped: false,
+        group: {
+            leader: false,
+            members: [],
+        },
         hp: hpMAX,
         hpMAX: hpMAX,
         isAlive: true,
@@ -107,7 +111,21 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             self.x = (map[0].length-1) * TW;
         if (self.y > (map.length-1) * TH)
             self.y = (map.length-1) * TH;
-    }  
+    }
+    self.updateGroup = function () {
+        if (self.isGrouped) {
+            var gmembers = [];
+            for (var i in self.group.members) {
+                var temp = self.group.members[i];
+                for (var j in Player.list) {
+                    if (temp.id == Player.list[j].id) {
+                        gmembers.push(Player.list[j]);
+                    }
+                }
+            }
+            self.group.members = gmembers;
+        }
+    }
     self.getInitPack = function() {
         return {
             id: self.id,
@@ -139,6 +157,7 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             hp: self.hp,
             hpMAX: self.hpMAX,
             isAlive: self.isAlive,
+            isGrouped: self.isGrouped,
             group: self.group,
             target: self.target,
             targethp: self.targethp,
@@ -156,10 +175,10 @@ var Player = function (id, name, pclass, realm, ability1, ability2, ability3, ab
             interupted: self.interupted,
             isCasting: self.isCasting,
             isAttacking: self.isAttacking,
-            group: null,
             hp: self.hp,
             hpMAX: self.hpMAX,
             isAlive: self.isAlive,
+            isGrouped: self.isGrouped,
             group: self.group,
             target: self.target,
             targethp: self.targethp,
@@ -225,6 +244,25 @@ Player.onConnect = function (socket, name, pclass, realm) {
     
     socket.on('target', function (data) {
         player.target = data.target;
+    });
+    
+    socket.on('acceptGroupInvite', function (data) {
+        if (player.id == data.acceptor.id) {
+            player.group.leader = false;
+            player.group.members.push(data.inviter);
+            player.isGrouped = true;
+            SOCKET_CONNECTIONS[player.id].emit('addToChat', 'You have joined the group', 'teal');
+        }
+        //this results in a stack overflow
+        //for (var i in Player.list) {
+        //    var inviter = Player.list[i];
+        //    if (inviter.id == data.inviter.id) {
+        //        inviter.group.leader = true;
+        //        inviter.group.members.push(data.acceptor);
+        //        inviter.isGrouped = true;
+        //        SOCKET_CONNECTIONS[inviter.id].emit('addToChat', 'You have formed the group', 'teal');
+        //    }
+        //}
     });
     
     socket.on('ability1', function (data) {
@@ -512,6 +550,7 @@ Player.update = function () {
     for (var i in Player.list) {
         var player = Player.list[i];
         player.updatePosition();
+        player.updateGroup();
         data.push(player.getUpdatePack());
     }
     return data;
@@ -582,6 +621,10 @@ io.sockets.on('connection', function (socket) {
                 }
             }
             if (vtarget) {
+                if (vtarget.id == casterid) {
+                    SOCKET_CONNECTIONS[casterid].emit('addToChat', 'You can\'t invite yourself.', 'red');
+                    return;
+                }
                 SOCKET_CONNECTIONS[casterid].emit('addToChat', 'You invited ' + vtarget.name + ' to join your party.', 'green');
                 SOCKET_CONNECTIONS[vtarget.id].emit('addToChat', Player.list[casterid].name + ' invited you to join your party.', 'green');
                 SOCKET_CONNECTIONS[vtarget.id].emit('groupInvite', Player.list[casterid]);
@@ -650,7 +693,8 @@ setInterval(function () {
     }
     for (var i in SOCKET_CONNECTIONS) {
         var socket = SOCKET_CONNECTIONS[i];
-        socket.emit('init', initPack);
+        if (Object.keys(initPack).length > 0)
+            socket.emit('init', initPack);
         socket.emit('update', pack);
     }
     initPack.player = [];
